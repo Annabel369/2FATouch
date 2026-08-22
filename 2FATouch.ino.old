@@ -54,8 +54,8 @@ String cfgPIX = "810924f7-69b3-4116-8d8f-692e4a25c251"; // Pode ser CPF, E-mail
                                                         // ou Chave Aleatória
 String cfgWiser =
     "wise.com/pay/me/bryanbuenodossantoss"; // Wiser banco de coversao de
-                                            // Moedas seu
-                                            // wise.com/pay/me/amauribuenodossantoss
+                                             // Moedas seu
+                                             // wise.com/pay/me/amauribuenodossantoss
 String dynamicWhitelist = "";
 String weatherApiKey =
     "fff7ce772990b49a7efd6b1a6827c687"; // https://home.openweathermap.org/api_keys
@@ -107,7 +107,6 @@ struct WeatherData {
   float windSpeed;
   String main;
   String windDesc; // Para guardar o nome (Brisa, Vendaval, etc)
-  int code;
 };
 
 std::vector<TotpAccount> accounts;
@@ -120,95 +119,23 @@ int currentSeedIndex = -1;
 int lastSec = -1;
 bool forceRedraw = true;
 
-// --- DECLARAÇÕES E FUNÇÕES DE CARREGAMENTO (LOADING SCREEN) ---
-void updateWeather(); // Declaração antecipada
-
-void drawLoadingCreeper(int cx, int cy, int cSize) {
-  tft.fillRect(cx, cy, cSize, cSize, TFT_GREEN);
-  int p = cSize / 8;
-  // Olhos
-  tft.fillRect(cx + (1 * p), cy + (1 * p), 2 * p, 2 * p, TFT_BLACK);
-  tft.fillRect(cx + (5 * p), cy + (1 * p), 2 * p, 2 * p, TFT_BLACK);
-  // Nariz
-  tft.fillRect(cx + (3 * p), cy + (3 * p), 2 * p, 3 * p, TFT_BLACK);
-  // Boca laterais
-  tft.fillRect(cx + (2 * p), cy + (4 * p), 1 * p, 2 * p, TFT_BLACK);
-  tft.fillRect(cx + (5 * p), cy + (4 * p), 1 * p, 2 * p, TFT_BLACK);
-  // Boca cantos inferiores
-  tft.fillRect(cx + (1 * p), cy + (6 * p), 2 * p, 2 * p, TFT_BLACK);
-  tft.fillRect(cx + (5 * p), cy + (6 * p), 2 * p, 2 * p, TFT_BLACK);
-}
-
-void drawLoadingScreen(int percent) {
-  tft.fillScreen(TFT_BLACK);
-
-  // 1. Creeper Logo (Tamanho 64x64 centralizado horizontalmente)
-  drawLoadingCreeper((tft.width() - 64) / 2, 20, 64);
-
-  // 2. Texto "Loading... 80%"
-  tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.drawCentreString("Loading... " + String(percent) + "%", tft.width() / 2,
-                       100, 4);
-
-  // 3. Barra de carregamento identica a escala/design
-  // Borda arredondada branca
-  tft.drawRoundRect(14, 145, 212, 40, 8, TFT_WHITE);
-  tft.drawRoundRect(15, 146, 210, 38, 7, TFT_WHITE);
-
-  // 10 blocos verdes de carregamento
-  int activeSegments = percent / 10;
-  for (int i = 0; i < 10; i++) {
-    if (i < activeSegments) {
-      tft.fillRect(22 + i * 20, 151, 16, 28, TFT_GREEN);
-    }
-  }
-
-  // 4. Texto "Por favor aguarde..."
-  tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.drawCentreString("Por favor aguarde...", tft.width() / 2, 205, 4);
-}
-
-void carregarTelaMeteorologia() {
-  for (int pct = 0; pct <= 80; pct += 10) {
-    drawLoadingScreen(pct);
-    delay(100);
-  }
-  updateWeather();
-  for (int pct = 90; pct <= 100; pct += 10) {
-    drawLoadingScreen(pct);
-    delay(80);
-  }
-}
-
 // --- FUNÇÕES DE TROCA DE TELA COM TOUCH ---
 void proximaTela() {
-  int validos[] = {0, 1, 2, 4, 5, 6}; // Telas do seu sistema
-  int n = 6;
-  int idx = 0;
-  for (int i = 0; i < n; i++)
-    if (validos[i] == displayMode) {
-      idx = i;
-      break;
-    }
-  displayMode = validos[(idx + 1) % n];
-  if (displayMode == 4)
-    carregarTelaMeteorologia();
-  forceRedraw = true;
+    int validos[] = {0, 1, 2, 4, 5, 6}; // Telas do seu sistema
+    int n = 6;
+    int idx = 0;
+    for (int i=0; i<n; i++) if(validos[i] == displayMode) { idx = i; break; }
+    displayMode = validos[(idx + 1) % n];
+    forceRedraw = true;
 }
 
 void telaAnterior() {
-  int validos[] = {0, 1, 2, 4, 5, 6};
-  int n = 6;
-  int idx = 0;
-  for (int i = 0; i < n; i++)
-    if (validos[i] == displayMode) {
-      idx = i;
-      break;
-    }
-  displayMode = validos[(idx - 1 + n) % n];
-  if (displayMode == 4)
-    carregarTelaMeteorologia();
-  forceRedraw = true;
+    int validos[] = {0, 1, 2, 4, 5, 6}; 
+    int n = 6;
+    int idx = 0;
+    for (int i=0; i<n; i++) if(validos[i] == displayMode) { idx = i; break; }
+    displayMode = validos[(idx - 1 + n) % n];
+    forceRedraw = true;
 }
 
 String versaoAtual = "6.3";
@@ -341,45 +268,13 @@ void drawPCPerformance() {
   tft.fillRect(30, 215, (pcTemp * 2), 10, (pcTemp > 75) ? TFT_RED : TFT_YELLOW);
 }
 
-String get_weather_description(int code) {
-  switch (code) {
-  case 0:
-    return "Ceu Limpo";
-  case 1:
-  case 2:
-  case 3:
-    return "Nuvens Esparsas";
-  case 45:
-  case 48:
-    return "Nevoeiro";
-  case 51:
-  case 53:
-  case 55:
-  case 61:
-  case 63:
-  case 65:
-    return "Chuva leve";
-  case 80:
-  case 81:
-  case 82:
-    return "Chuva forte";
-  case 95:
-  case 96:
-  case 99:
-    return "Tempestade";
-  default:
-    return "Nublado";
-  }
-}
-
 void updateWeather() {
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
 
-    // URL Open-Meteo direta (São Paulo -> Lat: -23.5505, Lon: -46.6333)
-    String url =
-        "http://api.open-meteo.com/v1/"
-        "forecast?latitude=-23.5505&longitude=-46.6333&current_weather=true";
+    // URL configurada para One Call 3.0 com coordenadas de Bom Jesus dos
+    // Perdões
+    String url = "http://192.168.100.173/v/meto.php";
 
     Serial.println("Buscando dados meteorologicos...");
     http.begin(url);
@@ -394,18 +289,18 @@ void updateWeather() {
 
       if (!error) {
         // 1. Temperatura
-        weather.temp = doc["current_weather"]["temperature"];
+        weather.temp = doc["current"]["temp"];
 
-        // 2. Vento (A API ja envia em km/h)
-        weather.windSpeed = doc["current_weather"]["windspeed"];
+        // 2. Vento (A API envia em m/s, convertemos para km/h multiplicando
+        // por 3.6)
+        float windMps = doc["current"]["wind_speed"];
+        weather.windSpeed = windMps * 3.6;
 
         // 3. Classificacao do vento (Brisa, Vendaval, Tornado...)
         weather.windDesc = classificarVento(weather.windSpeed);
 
-        // 4. Descricao do Ceu
-        int wCode = doc["current_weather"]["weathercode"];
-        weather.code = wCode;
-        weather.main = get_weather_description(wCode);
+        // 4. Descrição do Céu (Ex: "céu limpo", "nuvens esparsas")
+        weather.main = doc["current"]["weather"][0]["description"].as<String>();
 
         // Log para o Monitor Serial
         Serial.println("--- DADOS RECEBIDOS ---");
@@ -430,330 +325,22 @@ void updateWeather() {
   }
 }
 
-void drawIconSun(int x, int y) {
-  tft.fillCircle(x + 30, y + 25, 12, TFT_YELLOW);
-  tft.drawLine(x + 30, y + 5, x + 30, y + 11, TFT_ORANGE);  // N
-  tft.drawLine(x + 30, y + 39, x + 30, y + 45, TFT_ORANGE); // S
-  tft.drawLine(x + 10, y + 25, x + 16, y + 25, TFT_ORANGE); // W
-  tft.drawLine(x + 44, y + 25, x + 50, y + 25, TFT_ORANGE); // E
-  tft.drawLine(x + 16, y + 11, x + 20, y + 15, TFT_ORANGE); // NW
-  tft.drawLine(x + 44, y + 11, x + 40, y + 15, TFT_ORANGE); // NE
-  tft.drawLine(x + 16, y + 39, x + 20, y + 35, TFT_ORANGE); // SW
-  tft.drawLine(x + 44, y + 39, x + 40, y + 35, TFT_ORANGE); // SE
-}
-
-void drawIconCloud(int x, int y) {
-  uint16_t skyBlue = tft.color565(135, 206, 250);
-  uint16_t lightBlue = tft.color565(176, 224, 230);
-  tft.fillCircle(x + 20, y + 28, 10, skyBlue);
-  tft.fillCircle(x + 40, y + 28, 10, skyBlue);
-  tft.fillCircle(x + 30, y + 20, 14, lightBlue);
-  tft.fillRect(x + 20, y + 22, 20, 16, skyBlue);
-}
-
-void drawIconRain(int x, int y) {
-  uint16_t darkCloud = tft.color565(70, 130, 180);
-  uint16_t lightCloud = tft.color565(100, 149, 237);
-  tft.fillCircle(x + 20, y + 24, 9, darkCloud);
-  tft.fillCircle(x + 40, y + 24, 9, darkCloud);
-  tft.fillCircle(x + 30, y + 16, 12, lightCloud);
-  tft.fillRect(x + 20, y + 18, 20, 15, darkCloud);
-
-  uint16_t dropColor = tft.color565(0, 191, 255);
-  tft.drawLine(x + 20, y + 34, x + 17, y + 42, dropColor);
-  tft.drawLine(x + 30, y + 36, x + 27, y + 44, dropColor);
-  tft.drawLine(x + 40, y + 34, x + 37, y + 42, dropColor);
-}
-
-void drawIconSnow(int x, int y) {
-  uint16_t darkCloud = tft.color565(70, 130, 180);
-  uint16_t lightCloud = tft.color565(100, 149, 237);
-  tft.fillCircle(x + 20, y + 24, 9, darkCloud);
-  tft.fillCircle(x + 40, y + 24, 9, darkCloud);
-  tft.fillCircle(x + 30, y + 16, 12, lightCloud);
-  tft.fillRect(x + 20, y + 18, 20, 15, darkCloud);
-
-  tft.drawLine(x + 18, y + 38, x + 22, y + 38, TFT_WHITE);
-  tft.drawLine(x + 20, y + 36, x + 20, y + 40, TFT_WHITE);
-  tft.drawLine(x + 28, y + 40, x + 32, y + 40, TFT_WHITE);
-  tft.drawLine(x + 30, y + 38, x + 30, y + 42, TFT_WHITE);
-  tft.drawLine(x + 38, y + 38, x + 42, y + 38, TFT_WHITE);
-  tft.drawLine(x + 40, y + 36, x + 40, y + 40, TFT_WHITE);
-}
-
-void drawIconThunderstorm(int x, int y) {
-  uint16_t darkCloud = tft.color565(47, 79, 79);
-  uint16_t lightCloud = tft.color565(112, 128, 144);
-  tft.fillCircle(x + 20, y + 22, 9, darkCloud);
-  tft.fillCircle(x + 40, y + 22, 9, darkCloud);
-  tft.fillCircle(x + 30, y + 14, 12, lightCloud);
-  tft.fillRect(x + 20, y + 16, 20, 15, darkCloud);
-
-  uint16_t dropColor = tft.color565(0, 191, 255);
-  tft.drawLine(x + 18, y + 32, x + 15, y + 40, dropColor);
-  tft.drawLine(x + 42, y + 32, x + 39, y + 40, dropColor);
-
-  tft.drawLine(x + 32, y + 28, x + 26, y + 36, TFT_YELLOW);
-  tft.drawLine(x + 26, y + 36, x + 33, y + 36, TFT_YELLOW);
-  tft.drawLine(x + 33, y + 36, x + 27, y + 45, TFT_YELLOW);
-  tft.drawLine(x + 33, y + 28, x + 27, y + 36, TFT_YELLOW);
-  tft.drawLine(x + 27, y + 36, x + 34, y + 36, TFT_YELLOW);
-  tft.drawLine(x + 34, y + 36, x + 28, y + 45, TFT_YELLOW);
-}
-
-void drawIconWind(int x, int y) {
-  uint16_t windColor = tft.color565(176, 224, 230);
-  tft.drawLine(x + 10, y + 15, x + 40, y + 15, windColor);
-  tft.drawCircle(x + 43, y + 18, 3, windColor);
-  tft.drawLine(x + 5, y + 25, x + 45, y + 25, windColor);
-  tft.drawLine(x + 15, y + 35, x + 35, y + 35, windColor);
-  tft.drawCircle(x + 38, y + 38, 3, windColor);
-}
-
-void drawIconFog(int x, int y) {
-  uint16_t fogCloud = tft.color565(176, 196, 222);
-  tft.fillCircle(x + 20, y + 20, 9, fogCloud);
-  tft.fillCircle(x + 40, y + 20, 9, fogCloud);
-  tft.fillCircle(x + 30, y + 12, 12, fogCloud);
-  tft.fillRect(x + 20, y + 14, 20, 15, fogCloud);
-
-  uint16_t fogLine = tft.color565(211, 211, 211);
-  tft.drawLine(x + 12, y + 34, x + 48, y + 34, fogLine);
-  tft.drawLine(x + 8, y + 39, x + 52, y + 39, fogLine);
-  tft.drawLine(x + 16, y + 44, x + 44, y + 44, fogLine);
-}
-
-void drawIconHail(int x, int y) {
-  uint16_t darkCloud = tft.color565(70, 130, 180);
-  uint16_t lightCloud = tft.color565(100, 149, 237);
-  tft.fillCircle(x + 20, y + 24, 9, darkCloud);
-  tft.fillCircle(x + 40, y + 24, 9, darkCloud);
-  tft.fillCircle(x + 30, y + 16, 12, lightCloud);
-  tft.fillRect(x + 20, y + 18, 20, 15, darkCloud);
-
-  tft.drawLine(x + 20, y + 34, x + 18, y + 40, TFT_WHITE);
-  tft.fillCircle(x + 18, y + 43, 2, TFT_WHITE);
-  tft.drawLine(x + 30, y + 34, x + 28, y + 40, TFT_WHITE);
-  tft.fillCircle(x + 28, y + 43, 2, TFT_WHITE);
-  tft.drawLine(x + 40, y + 34, x + 38, y + 40, TFT_WHITE);
-  tft.fillCircle(x + 38, y + 43, 2, TFT_WHITE);
-}
-
-void drawIconTornado(int x, int y) {
-  uint16_t tornadoColor = tft.color565(112, 128, 144);
-  tft.drawRoundRect(x + 10, y + 10, 40, 6, 3, tornadoColor);
-  tft.drawRoundRect(x + 15, y + 18, 30, 5, 2, tornadoColor);
-  tft.drawRoundRect(x + 20, y + 25, 20, 5, 2, tornadoColor);
-  tft.drawRoundRect(x + 24, y + 32, 12, 4, 2, tornadoColor);
-  tft.drawLine(x + 28, y + 38, x + 30, y + 44, tornadoColor);
-  tft.drawCircle(x + 26, y + 45, 1, tornadoColor);
-  tft.drawCircle(x + 34, y + 45, 1, tornadoColor);
-}
-
-String obterEstacao(int mes, int dia) {
-  int d = mes * 100 + dia;
-  if (d >= 1221 || d < 320) {
-    return "Verao";
-  } else if (d >= 320 && d < 620) {
-    return "Outono";
-  } else if (d >= 620 && d < 922) {
-    return "Inverno";
-  } else {
-    return "Primavera";
-  }
-}
-
-String obterFaseLua(unsigned long epoch, bool &isBloodMoon) {
-  unsigned long ref = 947182440;
-  double cycle = 2551442.877;
-  double diff = 0;
-  if (epoch > ref) {
-    diff = (double)(epoch - ref);
-  } else {
-    diff = (double)(ref - epoch);
-  }
-  double phase = fmod(diff, cycle);
-  if (epoch < ref && phase > 0) {
-    phase = cycle - phase;
-  }
-  double fraction = phase / cycle;
-
-  isBloodMoon =
-      (fraction >= 0.44 && fraction < 0.56) && (((epoch / 86400) % 20) == 5);
-
-  if (isBloodMoon) {
-    return "Lua de Sangue";
-  }
-  if (fraction < 0.06 || fraction >= 0.94) {
-    return "Lua Nova";
-  } else if (fraction >= 0.06 && fraction < 0.44) {
-    return "Lua Crescente";
-  } else if (fraction >= 0.44 && fraction < 0.56) {
-    return "Lua Cheia";
-  } else {
-    return "Lua Minguante";
-  }
-}
-
-void drawIconMoon(int x, int y, unsigned long epoch) {
-  bool isBloodMoon = false;
-  obterFaseLua(epoch, isBloodMoon);
-
-  unsigned long ref = 947182440;
-  double cycle = 2551442.877;
-  double diff = 0;
-  if (epoch > ref) {
-    diff = (double)(epoch - ref);
-  } else {
-    diff = (double)(ref - epoch);
-  }
-  double phase = fmod(diff, cycle);
-  if (epoch < ref && phase > 0) {
-    phase = cycle - phase;
-  }
-  double fraction = phase / cycle;
-
-  // Estrelas ao redor
-  tft.drawPixel(x + 10, y + 10, TFT_WHITE);
-  tft.drawPixel(x + 45, y + 8, TFT_WHITE);
-  tft.drawPixel(x + 12, y + 35, TFT_WHITE);
-  tft.drawPixel(x + 48, y + 38, TFT_WHITE);
-
-  uint16_t moonColor =
-      isBloodMoon ? tft.color565(220, 40, 40) : tft.color565(240, 240, 245);
-  uint16_t shadowColor = TFT_BLACK;
-
-  if (fraction < 0.06 || fraction >= 0.94) {
-    tft.drawCircle(x + 30, y + 25, 12, tft.color565(80, 80, 80));
-    tft.drawPixel(x + 30, y + 25, TFT_WHITE);
-  } else if (fraction >= 0.06 && fraction < 0.44) {
-    tft.fillCircle(x + 30, y + 25, 12, moonColor);
-    tft.fillCircle(x + 36, y + 25, 12, shadowColor);
-  } else if (fraction >= 0.44 && fraction < 0.56) {
-    tft.fillCircle(x + 30, y + 25, 12, moonColor);
-  } else {
-    tft.fillCircle(x + 30, y + 25, 12, moonColor);
-    tft.fillCircle(x + 24, y + 25, 12, shadowColor);
-  }
-}
-
-void drawWeatherIcon(int code, float windSpeed, int x, int y,
-                     unsigned long epoch) {
-  if (windSpeed >= 90) {
-    drawIconTornado(x, y);
-    return;
-  }
-  if (windSpeed >= 40 && (code == 0 || code == 1 || code == 2 || code == 3)) {
-    drawIconWind(x, y);
-    return;
-  }
-
-  time_t rawtime = (time_t)epoch - (3 * 3600);
-  struct tm *ti = localtime(&rawtime);
-  bool isNight = (ti->tm_hour >= 18 || ti->tm_hour < 6);
-
-  // Se for noite e o céu não estiver totalmente limpo, desenha a lua
-  // menor/atrás das nuvens
-  if (isNight && code != 0) {
-    drawIconMoon(x + 8, y - 10, epoch);
-  }
-
-  switch (code) {
-  case 0:
-    if (isNight) {
-      drawIconMoon(x, y, epoch);
-    } else {
-      drawIconSun(x, y);
-    }
-    break;
-  case 1:
-  case 2:
-  case 3:
-    drawIconCloud(x, y);
-    break;
-  case 45:
-  case 48:
-    drawIconFog(x, y);
-    break;
-  case 51:
-  case 53:
-  case 55:
-  case 61:
-  case 63:
-  case 65:
-  case 80:
-  case 81:
-  case 82:
-    drawIconRain(x, y);
-    break;
-  case 71:
-  case 73:
-  case 75:
-  case 77:
-  case 85:
-  case 86:
-    drawIconSnow(x, y);
-    break;
-  case 95:
-    drawIconThunderstorm(x, y);
-    break;
-  case 96:
-  case 99:
-    drawIconHail(x, y);
-    break;
-  default:
-    drawIconCloud(x, y);
-    break;
-  }
-}
-
-void drawWeatherHeader(unsigned long epoch) {
-  time_t rawtime = (time_t)epoch - (3 * 3600); // Horário de Brasília (UTC-3)
-  struct tm *ti = localtime(&rawtime);
-
-  const char *diasSemana[] = {"Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"};
-  String diaHoje = diasSemana[ti->tm_wday];
-
-  char headerBuf[50];
-  sprintf(headerBuf, "%02d:%02d:%02d | %s %02d/%02d", ti->tm_hour, ti->tm_min,
-          ti->tm_sec, diaHoje.c_str(), ti->tm_mday, ti->tm_mon + 1);
-
-  tft.setTextColor(TFT_YELLOW, TFT_BLACK);
-  tft.drawCentreString(headerBuf, 120, 10, 2);
-}
-
-void drawWeatherScreen(unsigned long epoch) {
+void drawWeatherScreen() {
   tft.fillScreen(TFT_BLACK);
-
-  // Desenha o Ícone do Clima baseado nas condições
-  drawWeatherIcon(weather.code, weather.windSpeed, 90, 45, epoch);
-
-  time_t rawtime = (time_t)epoch - (3 * 3600);
-  struct tm *ti = localtime(&rawtime);
-  bool isNight = (ti->tm_hour >= 18 || ti->tm_hour < 6);
-
-  // Escrita pequena descrevendo a fase da lua se for noite
-  if (isNight) {
-    bool isBloodMoon = false;
-    String faseLua = obterFaseLua(epoch, isBloodMoon);
-    tft.setTextColor(isBloodMoon ? TFT_RED : tft.color565(80, 160, 255),
-                     TFT_BLACK);
-    tft.drawCentreString(faseLua, 120, 92, 2);
-  }
-
-  // Temperatura em destaque abaixo do ícone
-  tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.drawCentreString(String(weather.temp, 1) + " C", 120, 105, 6);
-
-  // Condição do Céu
   tft.setTextColor(TFT_YELLOW, TFT_BLACK);
-  tft.drawCentreString(weather.main, 120, 165, 4);
+  tft.drawCentreString("METEOROLOGIA", 120, 10, 2);
+
+  // Temperatura em destaque
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.drawCentreString(String(weather.temp, 1) + " C", 120, 50,
+                       6);                // Fonte grande
+  tft.drawCentreString(" C", 177, 50, 4); // Fonte grande
 
   // Velocidade do Vento
   tft.setTextColor(TFT_CYAN, TFT_BLACK);
-  tft.drawCentreString("Velocidade do Vento", 120, 205, 2);
+  tft.drawCentreString("Velocidade do Vento", 120, 115, 2); // Fonte grande
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.drawCentreString(String(weather.windSpeed, 1) + " km/h", 120, 225, 4);
+  tft.drawCentreString(String(weather.windSpeed, 1) + " km/h", 120, 180, 4);
 
   // Classificacao do Vento (Muda de cor se for perigoso)
   uint16_t corVento = TFT_GREEN;
@@ -763,12 +350,11 @@ void drawWeatherScreen(unsigned long epoch) {
     corVento = TFT_RED;
 
   tft.setTextColor(corVento, TFT_BLACK);
-  tft.drawCentreString(weather.windDesc, 120, 260, 4);
+  tft.drawCentreString(weather.windDesc, 120, 220, 4);
 
-  // Exibe a estação do ano embaixo do vento
-  String estacao = obterEstacao(ti->tm_mon + 1, ti->tm_mday);
-  tft.setTextColor(tft.color565(180, 80, 255), TFT_BLACK);
-  tft.drawCentreString("Estacao: " + estacao, 120, 290, 2);
+  // Condicao do Ceu
+  tft.setTextColor(TFT_YELLOW, TFT_BLACK);
+  tft.drawCentreString(weather.main, 120, 280, 4);
 }
 
 void drawWiFiScreen() {
@@ -1228,18 +814,18 @@ void drawInfo(unsigned long epoch) {
 // --- Setup ---
 void setup() {
   Serial.begin(115200);
-
+  
   SPI.setFrequency(20000000);
   SPI.begin(18, 19, 23, SD_CS);
   tft.init();
   tft.setRotation(0);
-  tft.invertDisplay(false); // Inverte as cores da tela conforme solicitado
+  tft.invertDisplay(false);
   tft.fillScreen(TFT_BLACK);
 
   // INICIA O TOUCH (DEPOIS DO TFT)
   touchscreenSPI.begin(XPT2046_CLK, XPT2046_MISO, XPT2046_MOSI, XPT2046_CS);
   touchscreen.begin(touchscreenSPI);
-  touchscreen.setRotation(0);
+  touchscreen.setRotation(0); 
 
   // Configuração do Decodificador de Imagem
   server.onNotFound(handleFileRead);
@@ -1579,8 +1165,8 @@ void setup() {
     } else if (modo == "PIX") {
       displayMode = 2; // QR PIX
     } else if (modo == "CLIMA") {
-      displayMode = 4;            // Nova tela de Meteorologia
-      carregarTelaMeteorologia(); // Busca os dados com animação de progresso
+      displayMode = 4; // Nova tela de Meteorologia
+      updateWeather(); // Busca os dados da API com sua chave Default
     } else if (modo == "WISE") {
       displayMode = 6; // QR WISE
     } else {
@@ -1871,9 +1457,9 @@ void loop() {
   if (touchscreen.tirqTouched() && touchscreen.touched()) {
     if (millis() - last_tap > 500) {
       TS_Point p = touchscreen.getPoint();
-
-      // z == 4095 significa que o SPI não conseguiu ler nada (desconectado ou
-      // conflito) Um toque normal tem pressao entre 200 e 2000
+      
+      // z == 4095 significa que o SPI não conseguiu ler nada (desconectado ou conflito)
+      // Um toque normal tem pressao entre 200 e 2000
       if (p.z > 100 && p.z < 3500) {
         proximaTela();
         last_tap = millis();
@@ -1889,23 +1475,22 @@ void loop() {
   // --- ATUALIZAÇÃO AUTOMÁTICA (CLIMA E VIRADA DO DIA) ---
   static int lastWeatherHour = -1;
   static int lastDay = -1;
-
+  
   if (timeClient.isTimeSet()) {
-    int currentHour = timeClient.getHours();
-    int currentDay = timeClient.getDay();
-
-    if (lastWeatherHour != currentHour) {
-      updateWeather(); // Atualiza a API meteorologica a cada hora virada
-      lastWeatherHour = currentHour;
-    }
-
-    if (lastDay != -1 && currentDay != lastDay) {
-      forceRedraw = true; // Força redesenho total da tela principal na virada
-                          // da meia-noite
-      lastDay = currentDay;
-    } else if (lastDay == -1) {
-      lastDay = currentDay;
-    }
+      int currentHour = timeClient.getHours();
+      int currentDay = timeClient.getDay();
+      
+      if (lastWeatherHour != currentHour) {
+          updateWeather(); // Atualiza a API meteorologica a cada hora virada
+          lastWeatherHour = currentHour;
+      }
+      
+      if (lastDay != -1 && currentDay != lastDay) {
+          forceRedraw = true; // Força redesenho total da tela principal na virada da meia-noite
+          lastDay = currentDay;
+      } else if (lastDay == -1) {
+          lastDay = currentDay;
+      }
   }
   // --------------------------------------------------------
 
@@ -1995,8 +1580,7 @@ void loop() {
     else if (displayMode == 3 ||
              displayMode == 4) { // Aceita ambos os IDs configurados
       if (isRedraw)
-        drawWeatherScreen(epoch);
-      drawWeatherHeader(epoch);
+        drawWeatherScreen();
     } else if (displayMode == 5) {
       if (isRedraw)
         drawPCPerformance();
