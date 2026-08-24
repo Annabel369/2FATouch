@@ -20,6 +20,17 @@
 
 // --- TOUCH DO CYD ---
 #include <XPT2046_Touchscreen.h>
+
+#include <ESP32Servo.h> 
+
+Servo servoCreeper;
+const int PINO_RELE_LUZ = 22; // Alterado de 26 para 22 (livre no conector traseiro)
+const int PINO_SERVO = 27;    // Mantido no 27 (livre no conector traseiro)
+
+unsigned long tempoAberto = 0; 
+bool hardwareAtivo = false;
+
+
 #define XPT2046_IRQ 36
 #define XPT2046_MOSI 32
 #define XPT2046_MISO 39
@@ -1233,7 +1244,7 @@ void setup() {
   SPI.begin(18, 19, 23, SD_CS);
   tft.init();
   tft.setRotation(0);
-  tft.invertDisplay(false); // Inverte as cores da tela conforme solicitado
+  tft.invertDisplay(true); // Inverte as cores da tela conforme solicitado
   tft.fillScreen(TFT_BLACK);
 
   // INICIA O TOUCH (DEPOIS DO TFT)
@@ -1247,6 +1258,21 @@ void setup() {
   TJpgDec.setJpgScale(1);
   TJpgDec.setCallback(tft_output);
   tft.setSwapBytes(false);
+
+  // --- DENTRO DO SEU void setup() ---
+  pinMode(PINO_RELE_LUZ, OUTPUT);
+  digitalWrite(PINO_RELE_LUZ, LOW); // Relé desligado
+
+  // Define o padrão do ESP32 para Servos (Novo código)
+  ESP32PWM::allocateTimer(0);
+  ESP32PWM::allocateTimer(1);
+  ESP32PWM::allocateTimer(2);
+  ESP32PWM::allocateTimer(3);
+  servoCreeper.setPeriodHertz(50); // Frequência padrão de 50Hz
+
+  // Configura o pino e define posição inicial
+  servoCreeper.attach(PINO_SERVO, 500, 2400); // 500 e 2400 são os pulsos min/max padrão
+  servoCreeper.write(0); // Posição zero (cabeça fechada)
 
   checkUpdate();
   carregarTudo();
@@ -1805,24 +1831,28 @@ void setup() {
 
   // --- NOVA ROTA PARA O LINUX / YUBIKEY ---
   server.on("/aprovado", []() {
-    // 1. Verifica se o parâmetro 'senha' foi enviado na requisição
     if (server.hasArg("senha")) {
         String senhaRecebida = server.arg("senha");
         
-        // 2. Valida se a senha bate com uma das suas opções da Yubikey
         if (senhaRecebida == "T!9vL#4qZp2@hX7d" || senhaRecebida == "R7m2k9Xq") {
-            displayMode = 10; // Modo "Acesso Permitido"
+            displayMode = 10; 
             forceRedraw = true;
             
-            server.send(200, "text/plain", "OK Amauri, Acesso Liberado!\n");
-            Serial.println("Sinal recebido da Yubikey! Senha correta.");
-            return; // Interrompe a execução aqui em caso de sucesso
+            // --- A MÁGICA ACONTECE AQUI ---
+            digitalWrite(PINO_RELE_LUZ, HIGH); // Aciona o relé da lâmpada
+            servoCreeper.write(90);            // Gira o braço para 90 graus (abre a cabeça)
+            
+            // Marca o tempo para um possível fechamento automático
+            tempoAberto = millis();
+            hardwareAtivo = true;
+            
+            server.send(200, "text/plain", "Acesso Liberado! Creeper ativado.\n");
+            Serial.println("YubiKey ativada! Luz e Servo ligados.");
+            return; 
         }
     }
     
-    // 3. Se a senha estiver errada ou não for enviada, bloqueia o acesso
-    server.send(403, "text/plain", "Acesso Negado: Senha da Yubikey invalida!\n");
-    Serial.println("Tentativa de acesso negada na rota /aprovado!");
+    server.send(403, "text/plain", "Acesso Negado: Senha invalida!\n");
 });
 
   server.on("/pcstats", [ehMickey]() {
@@ -1893,6 +1923,18 @@ void loop() {
   server.handleClient();
   ftpSrv.handleFTP();
   timeClient.update();
+
+  // --- [NOVO] LÓGICA DE FECHAMENTO AUTOMÁTICO (ABAJUR/SERVO) ---
+  // Verifica se o hardware está ativo e se já passaram 30 segundos (30000 ms)
+  if (hardwareAtivo && (millis() - tempoAberto > 30000)) { 
+      digitalWrite(PINO_RELE_LUZ, LOW); // Apaga a luz do abajur
+      servoCreeper.write(0);            // Fecha a cabeça do Creeper (0 graus)
+      displayMode = 0;                  // Volta o visor para o rosto normal
+      forceRedraw = true;               // Avisa o sistema para redesenhar a tela
+      hardwareAtivo = false;            // Desmarca a flag de atividade
+      Serial.println("Tempo esgotado: Creeper fechado e luz apagada.");
+  }
+  // -------------------------------------------------------------
 
   // --- ATUALIZAÇÃO AUTOMÁTICA (CLIMA E VIRADA DO DIA) ---
   static int lastWeatherHour = -1;
@@ -2009,38 +2051,32 @@ void loop() {
       if (isRedraw)
         drawPCPerformance();
     }
-    // --- MODO 2: QR PIX ---
+    // --- MODO 6: QR WISE ---
     else if (displayMode == 6) {
       if (isRedraw)
         drawWiserScreen();
     }
     // --- MODO 10: ACESSO APROVADO PELA YUBIKEY ---
     else if (displayMode == 10) {
-      if (forceRedraw) {
+      if (isRedraw) { // O isRedraw garante que a imagem seja carregada só 1 vez
+        
+        // 1. Carrega a imagem de fundo do SD Card PRIMEIRO
+        TJpgDec.drawSdJpg(0, 0, "/minecraft240.jpg");
 
-        // TJpgDec.drawSdJpg(0, 0, "/minecraft240.jpg");
-
-        tft.drawRect(0, 0, 240, 240, TFT_GREEN);
-        tft.fillScreen(TFT_BLACK);
-
-        // Borda Dupla Verde (Ficou ótimo!)
+        // 2. Desenha a borda dupla verde por cima da imagem
         tft.drawRect(0, 0, 240, 240, TFT_GREEN);
         tft.drawRect(1, 1, 238, 238, TFT_GREEN);
 
-        // Chamando o Spider Jockey GRANDE centralizado
-        drawSpiderJockey(30, 40, 180);
+        // (Opcional) Se a imagem já tiver o desenho que você quer, 
+        // você pode remover ou comentar o SpiderJockey abaixo.
+        // drawSpiderJockey(30, 40, 180);
 
-        // Texto Principal em Ciano
+        // 3. Coloca os textos por cima da imagem
         tft.setTextColor(TFT_CYAN, TFT_BLACK);
-        tft.drawCentreString("Toque na Yubikey!", 120, 195, 4);
+        tft.drawCentreString("Acesso Liberado!", 120, 195, 4); // Mudei o texto para fazer sentido com o sucesso
 
-        // Subtexto em Amarelo (Corrigi a vírgula aqui)
         tft.setTextColor(TFT_YELLOW, TFT_BLACK);
         tft.drawCentreString("YUBIKEY OK", 120, 220, 2);
-      } else {
-        TJpgDec.drawSdJpg(0, 0, "/minecraft240.jpg");
-        tft.setTextColor(TFT_CYAN, TFT_BLACK);
-        tft.drawCentreString("Toque na Yubikey!", 120, 260, 4);
       }
     }
     // --- MODO 0: CREEPER / TOTP (PADRÃO) ---
