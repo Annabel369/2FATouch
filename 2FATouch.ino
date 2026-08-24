@@ -1805,17 +1805,25 @@ void setup() {
 
   // --- NOVA ROTA PARA O LINUX / YUBIKEY ---
   server.on("/aprovado", []() {
-    // 1. Muda o modo de exibição para algo que indique sucesso
-    displayMode = 10; // Vamos criar o modo 10 para "Acesso Permitido"
-
-    // 2. Você pode definir um tempo para a mensagem sumir (opcional)
-    forceRedraw = true;
-
-    // 3. Responde ao Linux que o sinal foi recebido
-    server.send(200, "text/plain", "OK Amauri, Acesso Liberado!\n");
-
-    Serial.println("Sinal recebido da Yubikey!");
-  });
+    // 1. Verifica se o parâmetro 'senha' foi enviado na requisição
+    if (server.hasArg("senha")) {
+        String senhaRecebida = server.arg("senha");
+        
+        // 2. Valida se a senha bate com uma das suas opções da Yubikey
+        if (senhaRecebida == "T!9vL#4qZp2@hX7d" || senhaRecebida == "R7m2k9Xq") {
+            displayMode = 10; // Modo "Acesso Permitido"
+            forceRedraw = true;
+            
+            server.send(200, "text/plain", "OK Amauri, Acesso Liberado!\n");
+            Serial.println("Sinal recebido da Yubikey! Senha correta.");
+            return; // Interrompe a execução aqui em caso de sucesso
+        }
+    }
+    
+    // 3. Se a senha estiver errada ou não for enviada, bloqueia o acesso
+    server.send(403, "text/plain", "Acesso Negado: Senha da Yubikey invalida!\n");
+    Serial.println("Tentativa de acesso negada na rota /aprovado!");
+});
 
   server.on("/pcstats", [ehMickey]() {
     if (ehMickey()) {
