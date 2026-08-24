@@ -222,3 +222,42 @@ O sistema não abre a porta com um simples comando web aberto. Ele exige uma sen
    * 💡 Aciona o Relé (GPIO 22) para acender a luz interna.
    * ⚙️ Gira o Servo Motor (GPIO 27) para 90 graus, abrindo a cabeça mecanicamente.
 4. **Fechamento Automático:** O loop principal do ESP32 monitora o tempo. Exatamente **30 segundos** após a abertura, ele corta a energia do Relé, retorna o Servo para 0 graus e volta o display para o rosto padrão do Creeper.
+
+5. # 🛒 Guia de Peças e Hardware (Mecânica e Automação)
+
+Abaixo está a lista completa dos componentes físicos necessários para montar a mecânica do Creeper (abertura da cabeça, iluminação) e a automação da porta secreta.
+
+---
+
+## 1. Módulo Relé (Para a Luz e a Trava)
+Para conectar diretamente no pino da placa CYD (ESP32), o ideal é usar um relé que funcione bem com sinais lógicos de **3.3V**.
+
+*   **O que buscar nas lojas:** `Módulo Relé 1 Canal 3.3V Optoacoplado` ou `Módulo Relé 3V Arduino`.
+
+> 💡 **Dica:** Módulos de relé de 5V com "Optoacoplador" geralmente também funcionam se você ligar os 5V no pino `VCC` e o sinal de 3.3V (do ESP32) no pino `IN`. Porém, optar pelo módulo de 3.3V nativo é mais seguro e evita problemas de tensão.
+
+---
+
+## 2. O Motor (Braço Mecânico)
+Para levantar a cabeça do Creeper ou abrir a porta, você não precisará de um braço robótico inteiro. Apenas um Servo Motor forte e uma haste metálica já resolvem o problema de forma limpa e escondida.
+
+*   **O Motor:** Busque por `Micro Servo MG90S`. 
+    *   *Nota:* A sigla "MG" significa *Metal Gear* (engrenagens de metal). **Não compre** o modelo SG90 azul (de plástico), pois suas engrenagens podem espanar ou quebrar com o peso contínuo da cabeça do Creeper.
+*   **A Haste (O "braço"):** Busque por `Tirante para aeromodelo` ou `Pushrod RC`. É um arame fino e resistente de aço com um terminal (*Linkage Stopper*) que se prende na hélice do servo motor e empurra/puxa a tampa do Creeper.
+
+---
+
+## 3. Trava de Porta (Fechadura Secreta)
+Para automatizar a porta secreta do quarto com segurança e estética embutida, a melhor opção são as travas tipo solenoide.
+
+*   **O que buscar nas lojas:** `Mini Trava Eletromagnética Solenoide 12V` ou `Fechadura Solenoide Lingueta 12V`.
+
+> ⚡ **Aviso de Energia:** Estas travas puxam muita corrente (Amperes) e operam em **12 Volts**. O seu ESP32 NÃO consegue alimentá-las diretamente. Será necessário o uso de uma fonte de energia 12V externa ligada à tomada. O Módulo Relé atuará apenas como o "interruptor" para liberar essa energia.
+
+### 🔌 Diagrama de Ligação (Trava Solenoide)
+
+1. **Fonte 12V:** Ligada à tomada da parede.
+2. **Caminho do Positivo:** O fio positivo (+12V) da fonte entra no Relé pelo borne **`COM`** (Comum) e sai pelo borne **`NO`** (Normally Open / Normalmente Aberto), indo até o fio positivo da trava solenoide.
+3. **Caminho do Negativo:** O fio negativo (GND) da trava liga diretamente no fio negativo da fonte 12V.
+
+🎯 **Ação Final:** Quando a YubiKey for tocada e validada, o ESP32 abrirá a cabeça do Creeper e ativará o Relé. O circuito do relé se fecha, permitindo a passagem dos 12V que puxarão a lingueta metálica da trava, destrancando a porta secreta instantaneamente!
