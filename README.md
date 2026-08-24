@@ -139,6 +139,36 @@ ftp://creeper:1234@192.168.100.49/
 
 <img width="1191" height="327" alt="image" src="https://github.com/user-attachments/assets/c1a8d30b-6931-47af-a48e-48e8c2db86a6" />
 
+Para usarmos o yubikey-manager, nós vamos programar o Slot 2 da sua chave (que normalmente vem vazio de fábrica) com a função Challenge-Response ativando a exigência de toque obrigatório (--touch).
+
+  Siga estes passos exatos no seu terminal:
+
+  ### 1. Instale o YubiKey Manager
+
+  No Debian/Ubuntu, você instala o pacote oficial rodando:
+
+    sudo apt update && sudo apt install yubikey-manager -y
+
+  ### 2. Configure o "Slot 2" da chave (Faça apenas 1 vez)
+
+  Conecte sua YubiKey e rode o comando abaixo. Ele vai gerar uma credencial aleatória e injetar no Slot 2. O --touch é a mágica que diz ao hardware: "Sempre que alguém pedir esse código, faça o LED piscar e
+  exija o dedo na chave".
+
+    ykman otp chalresp --generate --touch --force 2
+
+  ### 3. Rode o novo script
+
+  Criei o script testa_yubikey_ykman.py. Ele simplesmente envia um "desafio" usando o ykman e fica travado esperando o resultado (que só sai depois do toque).
+
+  Agora basta rodar:
+
+    python3 ~/testa_yubikey_ykman.py
+
+  O LED da sua YubiKey vai começar a piscar esperando o toque. Bater no teclado não fará nada, mas encostar nela vai disparar o curl instantaneamente!
+
+
+  (ha ideia e coloca uma trava na cabeca do creeper e um bracos mecanico de aeromodelo para a cabeca abri e emitir luz como um abajuro enato vai ter que ativar 2 pinos para estas coisas com rele)
+
 
 
 
