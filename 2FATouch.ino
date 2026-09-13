@@ -47,6 +47,7 @@ WiFiUDP udpWhitelist;
 NTPClient timeClient(ntpUDP, "pool.ntp.org", 0, 60000);
 WebServer server(80);
 FtpServer ftpSrv;
+File uploadFile;
 
 // --- DECLARAÇÕES GLOBAIS PARA O MONITOR DO PC ---
 WiFiUDP udpPC;
@@ -62,10 +63,10 @@ String cfgSSID = "Maria Cristina 4G";
 String cfgPASS = "1247bfam";
 String cfgMODO = "REDE";
 String cfgIP = "192.168.100.";
-String cfgPIX = "000000-00000-00000-00000-00000000"; // Pode ser CPF, E-mail
+String cfgPIX = "810924f7-69b3-4116-8d8f-692e4a25c251"; // Pode ser CPF, E-mail
                                                         // ou Chave Aleatória
 String cfgWiser =
-    "wise.com/pay/me/yorname"; // Wiser banco de coversao de
+    "wise.com/pay/me/amauribuenodossantoss"; // Wiser banco de coversao de
                                             // Moedas seu
                                             // wise.com/pay/me/amauribuenodossantoss
 String dynamicWhitelist = "";
@@ -157,6 +158,38 @@ void scanJSON(File dir, String &json) {
 
     entry.close();
     entry = dir.openNextFile();
+  }
+}
+
+void handleUpload() {
+  HTTPUpload& upload = server.upload();
+  
+  if (upload.status == UPLOAD_FILE_START) {
+    String filename = upload.filename;
+    
+    // Garante que o nome comece com '/'
+    if (!filename.startsWith("/")) {
+      filename = "/" + filename;
+    }
+
+    // Abre/Cria o arquivo no SD para escrita
+    uploadFile = SD.open(filename, FILE_WRITE);
+    if (!uploadFile) {
+      Serial.println("Erro ao abrir arquivo no SD para escrita!");
+    } else {
+      Serial.printf("Iniciando upload: %s\n", filename.c_str());
+    }
+
+  } else if (upload.status == UPLOAD_FILE_WRITE) {
+    if (uploadFile) {
+      uploadFile.write(upload.buf, upload.currentSize);
+    }
+
+  } else if (upload.status == UPLOAD_FILE_END) {
+    if (uploadFile) {
+      uploadFile.close();
+      Serial.printf("Upload concluído! Tamanho: %u bytes\n", upload.totalSize);
+    }
   }
 }
 
@@ -432,7 +465,7 @@ void telaAnterior() {
   forceRedraw = true;
 }
 
-String versaoAtual = "6.3";
+String versaoAtual = "7.2";
 String urlVersaoGitHub =
     "https://raw.githubusercontent.com/Annabel369/2FA/main/version.txt";
 String versaoNova = ""; // Vai guardar a versão que o GitHub responder
@@ -2123,6 +2156,11 @@ void setup() {
   server.on("/login.html", handleLoginRoute);
   server.on("/doLogin", HTTP_POST, handleDoLogin);
   server.on("/logout", handleLogoutCustom);
+
+  // Rota de Upload corrigida (envia o HTTP 200 apenas após concluir)
+  server.on("/upload", HTTP_POST, []() {
+    server.send(200, "text/plain", "Upload OK");
+  }, handleUpload);
 
   server.on("/saveXARQ", HTTP_POST, []() {
   if (!verificarAcesso()) return;
