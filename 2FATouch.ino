@@ -65,7 +65,7 @@ String cfgIP = "192.168.100.";
 String cfgPIX = "000000-00000-00000-00000-00000000"; // Pode ser CPF, E-mail
                                                         // ou Chave Aleatória
 String cfgWiser =
-    "wise.com/pay/me/amauribuenodossantoss"; // Wiser banco de coversao de
+    "wise.com/pay/me/yorname"; // Wiser banco de coversao de
                                             // Moedas seu
                                             // wise.com/pay/me/amauribuenodossantoss
 String dynamicWhitelist = "";
