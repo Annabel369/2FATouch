@@ -45,10 +45,10 @@ https://www.crealitycloud.com/pt/model-detail/minecraft-creeper-printing-model?s
 
 
 
-# 🟢 Creeper Auth v6.2 - Dual Stack & Crypto Vault
+# 🟢 Creeper Auth v7.2.2 - Dual Stack & Crypto Vault
 O Creeper Auth v5.5 é um dispositivo de segurança de hardware baseado no ESP32. Ele combina um autenticador 2FA (TOTP) físico, um cofre de chaves mestras (Seeds) e um sistema de segurança de rede híbrido (IPv4/IPv6). Tudo isso com uma interface temática do Minecraft e gerenciamento total via SD Card e Web.
 
-# 🚀 Novidades da Versão v6.2
+# 🚀 Novidades da Versão v7.2.2
 Suporte Dual-Stack: Agora opera em IPv4 e IPv6 simultaneamente.
 
 Whitelist Dinâmica: Novo Agente Python que monitora sua rede e autoriza seu PC automaticamente.
