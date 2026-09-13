@@ -62,7 +62,7 @@ String cfgSSID = "Maria Cristina 4G";
 String cfgPASS = "1247bfam";
 String cfgMODO = "REDE";
 String cfgIP = "192.168.100.";
-String cfgPIX = "810924f7-69b3-4116-8d8f-692e4a25c251"; // Pode ser CPF, E-mail
+String cfgPIX = "000000-00000-00000-00000-00000000"; // Pode ser CPF, E-mail
                                                         // ou Chave Aleatória
 String cfgWiser =
     "wise.com/pay/me/amauribuenodossantoss"; // Wiser banco de coversao de
