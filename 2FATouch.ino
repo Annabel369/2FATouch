@@ -216,7 +216,7 @@ void handleDoLogin() {
       return;
     }
 
-    if (u == "admin" && hashDigitado.equalsIgnoreCase(hashSalvo)) {
+    if (u == "creeper" && hashDigitado.equalsIgnoreCase(hashSalvo)) {
       sessaoAtiva = true;
       server.send(200, "text/plain", "OK");
       return;
@@ -553,8 +553,8 @@ bool verificarAcesso() {
       Serial.println("Hash Digitado: " + hashSenhaDigitada);
       Serial.println("Hash no SD:       " + hashSalvo);
 
-      // Compara se o Usuário é 'admin' e se os Hashes são idênticos
-      if (usuarioDigitado == "admin" && hashSenhaDigitada.equalsIgnoreCase(hashSalvo)) {
+      // Compara se o Usuário é 'creeper' e se os Hashes são idênticos
+      if (usuarioDigitado == "creeper" && hashSenhaDigitada.equalsIgnoreCase(hashSalvo)) {
         Serial.println(">> ACESSO PERMITIDO <<");
         return true; 
       } else {
@@ -585,7 +585,7 @@ bool autenticarUsuario() {
   file.close();
 
   // Verifica se o cliente enviou credenciais HTTP Basic Auth
-  if (!server.authenticate("admin", "dummy")) { // Teste rápido de envio de credencial
+  if (!server.authenticate("creeper", "dummy")) { // Teste rápido de envio de credencial
     // Captura o que o usuário digitou
     String userDigitado = server.arg("user"); // O WebServer valida internamente
   }
@@ -1737,8 +1737,8 @@ void setup() {
   Serial.print("IPv6: ");
   Serial.println(WiFi.linkLocalIPv6());
   Serial.println("-------------------------");
-  Serial.println("FTP PORTA 21 User: creeper, Pass: 1234");
-  Serial.println("ftp://creeper:1234@192.168.100.49/");
+  Serial.println("FTP PORTA 21 User: creeper, Pass: k9R7xM2pQ4vL8wT5");
+  Serial.println("ftp://creeper:k9R7xM2pQ4vL8wT5@192.168.100.49/");
   Serial.println("-------------------------");
   // No setup, após conectar no Wi-Fi:
   if (MDNS.begin("creeper")) {
@@ -1992,6 +1992,8 @@ void setup() {
     if (ehMickey()) {
       h += "<div style='display: grid; grid-template-columns: 1fr 1fr; gap: "
            "10px;'>";
+      h += "  <a href='/v.html' style='display:block; background-color:#bb86fc; color:#000; padding:10px; text-decoration:none; border-radius:4px; font-weight:bold; text-align:center;'>🎬 VÍDEOS</a>";
+      h += "  <a href='/list.html' style='display:block; background-color:#03dac6; color:#000; padding:10px; text-decoration:none; border-radius:4px; font-weight:bold; text-align:center;'>📋 LISTA</a>";
       h += "  <a href='/vault' style='display:block;'>📁 VAULT</a>";
       h += "  <a href='/manage' style='display:block;'>🔑 TOKENS</a>";
       h += "  <a href='/network' style='display:block; grid-column: span 2;'>⚙️ "
@@ -2389,7 +2391,7 @@ void setup() {
   });
 
   server.begin();
-  ftpSrv.begin("creeper", "1234");
+  ftpSrv.begin("creeper", "k9R7xM2pQ4vL8wT5");
 }
 
 void loop() {
