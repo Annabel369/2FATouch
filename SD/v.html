@@ -34,6 +34,32 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
             max-height: 600px;
             overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .upload-section {
+            background-color: #2a2a2a;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border: 1px dashed #bb86fc;
+        }
+        .upload-section input[type="file"] {
+            display: none;
+        }
+        .upload-btn {
+            display: block;
+            text-align: center;
+            background-color: #03dac6;
+            color: #000;
+            padding: 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .upload-btn:hover {
+            background-color: #00b3a1;
         }
         .video-player-container {
             flex: 2;
@@ -46,6 +72,7 @@
             justify-content: center;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
             padding: 10px;
+            position: relative;
         }
         video {
             width: 100%;
@@ -88,6 +115,67 @@
         .btn:hover {
             background-color: #9965f4;
         }
+
+        /* --- OVERLAY E BARRA DE PROGRESSO RETRO --- */
+        .progress-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(18, 18, 18, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            border-radius: 8px;
+            transition: opacity 0.3s ease;
+        }
+        .progress-box {
+            width: 80%;
+            max-width: 400px;
+            background: #222;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #444;
+            box-shadow: 0 0 15px rgba(0,0,0,0.8);
+            text-align: center;
+        }
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 22px;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 10px;
+        }
+        .progress-bar-container {
+            width: 100%;
+            height: 28px;
+            background-color: #111;
+            border: 2px solid #ffffff;
+            border-radius: 6px;
+            padding: 2px;
+            box-sizing: border-box;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: repeating-linear-gradient(
+                90deg,
+                #7bc643,
+                #7bc643 12px,
+                #111 12px,
+                #111 15px
+            );
+            border-radius: 2px;
+            transition: width 0.2s ease;
+        }
+        .progress-footer {
+            margin-top: 10px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #aaaaaa;
+            letter-spacing: 2px;
+        }
         
         @media (max-width: 768px) {
             .container {
@@ -101,12 +189,33 @@
     <h1>Reprodutor de Mídia SD</h1>
     
     <div class="container">
+        <!-- Lista de Mídias e Upload -->
         <div class="video-list-container">
-            <h3 style="margin-top: 0;">Arquivos de Mídia</h3>
+            <div class="upload-section">
+                <label for="file-input" class="upload-btn">➕ Enviar Arquivo para SD</label>
+                <input type="file" id="file-input" accept=".mp4,.mkv,.mp3,.m4a,.webm,.avi">
+            </div>
+
+            <h3 style="margin-top: 0;">Arquivos no Cartão SD</h3>
             <div id="video-list">Carregando mídias...</div>
         </div>
         
+        <!-- Player de Vídeo com Barra Retro -->
         <div class="video-player-container">
+            <!-- Tela de Carregamento Estilo Retro -->
+            <div id="loading-overlay" class="progress-overlay" style="display: none;">
+                <div class="progress-box">
+                    <div class="progress-header">
+                        <span id="loader-title">Loading...</span>
+                        <span id="loader-percent">0%</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div id="loader-bar" class="progress-bar-fill"></div>
+                    </div>
+                    <div class="progress-footer">PLEASE WAIT...</div>
+                </div>
+            </div>
+
             <video id="player" controls>
                 Seu navegador não suporta a tag de vídeo.
             </video>
@@ -121,63 +230,147 @@
             const player = document.getElementById('player');
             const currentVideoTitle = document.getElementById('current-video-title');
             const fullscreenBtn = document.getElementById('fullscreen-btn');
+            const fileInput = document.getElementById('file-input');
 
-            // Extensões de mídia suportadas pelo navegador
+            // Elementos da Barra Retro
+            const overlay = document.getElementById('loading-overlay');
+            const loaderTitle = document.getElementById('loader-title');
+            const loaderPercent = document.getElementById('loader-percent');
+            const loaderBar = document.getElementById('loader-bar');
+
             const mediaExtensions = ['.mkv', '.mp4', '.m4a', '.mp3', '.avi', '.webm', '.ogg'];
 
-            // Busca a lista de arquivos do cartão SD através da rota /json do ESP32
-            fetch('/json')
-                .then(response => response.json())
-                .then(data => {
-                    videoListEl.innerHTML = '';
-                    
-                    // Filtra apenas arquivos de vídeo/áudio
-                    const mediaFiles = data.filter(item => {
-                        if (item.type === 'dir') return false;
-                        const name = item.name.toLowerCase();
-                        return mediaExtensions.some(ext => name.endsWith(ext));
-                    });
+            function showLoader(title = "Loading...") {
+                loaderTitle.textContent = title;
+                loaderPercent.textContent = "0%";
+                loaderBar.style.width = "0%";
+                overlay.style.display = 'flex';
+            }
 
-                    if (mediaFiles.length === 0) {
-                        videoListEl.innerHTML = '<p>Nenhum arquivo de mídia encontrado no SD.</p>';
-                        return;
-                    }
+            function updateLoader(percent) {
+                const p = Math.min(100, Math.max(0, Math.round(percent)));
+                loaderPercent.textContent = p + "%";
+                loaderBar.style.width = p + "%";
+            }
 
-                    mediaFiles.forEach(fileObj => {
-                        const div = document.createElement('div');
-                        div.className = 'video-item';
-                        div.textContent = `${fileObj.name} (${formatBytes(fileObj.size)})`;
+            function hideLoader() {
+                overlay.style.display = 'none';
+            }
+
+            // --- BUSCA LISTA DO SD ---
+            function loadFileList() {
+                showLoader("Lendo SD...");
+                updateLoader(30);
+
+                fetch('/json')
+                    .then(response => response.json())
+                    .then(data => {
+                        updateLoader(80);
+                        videoListEl.innerHTML = '';
                         
-                        div.addEventListener('click', () => {
-                            document.querySelectorAll('.video-item').forEach(el => el.classList.remove('active'));
-                            div.classList.add('active');
-                            
-                            playVideo(fileObj.name);
+                        const mediaFiles = data.filter(item => {
+                            if (item.type === 'dir') return false;
+                            const name = item.name.toLowerCase();
+                            return mediaExtensions.some(ext => name.endsWith(ext));
                         });
-                        
-                        videoListEl.appendChild(div);
-                    });
-                })
-                .catch(err => {
-                    videoListEl.innerHTML = '<p>Erro ao carregar arquivos do cartão SD.</p>';
-                    console.error('Erro:', err);
-                });
 
+                        if (mediaFiles.length === 0) {
+                            videoListEl.innerHTML = '<p>Nenhum arquivo de mídia no SD.</p>';
+                            hideLoader();
+                            return;
+                        }
+
+                        mediaFiles.forEach(fileObj => {
+                            const div = document.createElement('div');
+                            div.className = 'video-item';
+                            div.textContent = `${fileObj.name} (${formatBytes(fileObj.size)})`;
+                            
+                            div.addEventListener('click', () => {
+                                document.querySelectorAll('.video-item').forEach(el => el.classList.remove('active'));
+                                div.classList.add('active');
+                                playVideo(fileObj.name);
+                            });
+                            
+                            videoListEl.appendChild(div);
+                        });
+                        updateLoader(100);
+                        setTimeout(hideLoader, 300);
+                    })
+                    .catch(err => {
+                        hideLoader();
+                        videoListEl.innerHTML = '<p>Erro ao ler o cartão SD.</p>';
+                        console.error('Erro:', err);
+                    });
+            }
+
+            // --- REPRODUÇÃO DE VÍDEO ---
             function playVideo(filename) {
+                showLoader("Carregando...");
                 currentVideoTitle.textContent = filename;
-    
-                // 1. Remove barras do início para não duplicar (ex: "/Download.mp4" vira "Download.mp4")
+                
                 let cleanName = filename.startsWith('/') ? filename.substring(1) : filename;
-    
-                // 2. Codifica espaços e parênteses para formato de URL válido (%20, etc)
                 let encodedPath = '/' + encodeURIComponent(cleanName).replace(/%2F/g, '/');
-    
-                console.log("Requisitando mídia em:", encodedPath);
-    
+                
                 player.src = encodedPath;
                 player.load();
-                player.play().catch(e => console.error("Erro ao iniciar reprodução:", e));
-                }
+            }
+
+            // Eventos do Player de Vídeo para Atualizar a Barra
+            player.addEventListener('waiting', () => {
+                showLoader("Buffering...");
+                updateLoader(50);
+            });
+
+            player.addEventListener('canplay', () => {
+                updateLoader(100);
+                setTimeout(hideLoader, 200);
+                player.play().catch(e => console.log("Aguardando ação do usuário:", e));
+            });
+
+            // --- UPLOAD DE ARQUIVOS COM BARRA REAL ---
+            fileInput.addEventListener('change', () => {
+                const file = fileInput.files[0];
+                if (!file) return;
+
+                let safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+                if (!safeName.startsWith('/')) safeName = '/' + safeName;
+
+                const formData = new FormData();
+                formData.append("data", file, safeName);
+
+                const xhr = new XMLHttpRequest();
+                showLoader("Uploading...");
+
+                xhr.upload.addEventListener("progress", (e) => {
+                    if (e.lengthComputable) {
+                        const percent = (e.loaded / e.total) * 100;
+                        updateLoader(percent);
+                    }
+                });
+
+                xhr.addEventListener("load", () => {
+                    if (xhr.status === 200) {
+                        updateLoader(100);
+                        setTimeout(() => {
+                            hideLoader();
+                            alert("Upload concluído com sucesso!");
+                            fileInput.value = "";
+                            loadFileList();
+                        }, 400);
+                    } else {
+                        hideLoader();
+                        alert("Erro no servidor: Status " + xhr.status);
+                    }
+                });
+
+                xhr.addEventListener("error", () => {
+                    hideLoader();
+                    alert("Erro de conexão ao enviar arquivo para o ESP32.");
+                });
+
+                xhr.open("POST", "/upload");
+                xhr.send(formData);
+            });
 
             function formatBytes(bytes) {
                 if (bytes === 0 || isNaN(bytes)) return '0 B';
@@ -197,13 +390,16 @@
                 }
             });
 
-            // Reprodução Sequencial Automática
+            // Sequencial Automático
             player.addEventListener('ended', () => {
                 const activeItem = document.querySelector('.video-item.active');
                 if (activeItem && activeItem.nextElementSibling) {
                     activeItem.nextElementSibling.click();
                 }
             });
+
+            // Iniciar carregando a lista
+            loadFileList();
         });
     </script>
 </body>
