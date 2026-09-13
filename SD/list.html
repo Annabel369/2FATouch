@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciador de Arquivos - ESP32</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #121212; color: #e0e0e0; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #00ff66; padding-bottom: 10px; margin-bottom: 15px; }
+        h2 { color: #00ff66; }
+        .btn-group { display: flex; gap: 10px; }
+        .path-bar { background: #1a1a1a; padding: 8px 12px; border-radius: 4px; margin-bottom: 15px; font-family: monospace; color: #00ff66; border: 1px solid #333; }
+        .btn-refresh { background: #00ff66; color: #000; border: none; padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        .btn-refresh:hover { background: #00cc52; }
+        .btn-logout { background: #ff4444; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        .btn-logout:hover { background: #cc0000; }
+        table { width: 100%; border-collapse: collapse; background: #1a1a1a; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #2a2a2a; }
+        th { background-color: #252525; color: #00ff66; font-size: 13px; text-transform: uppercase; }
+        tr:hover { background-color: #222222; }
+        .folder-row { cursor: pointer; user-select: none; }
+        .folder-row:hover { background-color: #0d3822 !important; }
+        .back-row { cursor: pointer; background: #202020; font-weight: bold; color: #ffcc00; }
+        .back-row:hover { background: #333 !important; }
+        .hidden-item { opacity: 0.5; font-style: italic; }
+        .tag-oculto { font-size: 10px; background: #444; color: #fff; padding: 2px 6px; border-radius: 3px; margin-left: 6px; }
+        .btn-act { text-decoration: none; padding: 6px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; display: inline-block; margin-right: 5px; }
+        .btn-down { background: #0d3846; color: #00bcff; }
+        .btn-edit { background: #46380d; color: #ffcc00; }
+        .btn-del { background: #460d0d; color: #ff4444; }
+        .loading { text-align: center; padding: 20px; font-size: 16px; color: #888; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h2>📂 Gerenciador de Arquivos do SD</h2>
+        <div class="btn-group">
+            <button class="btn-refresh" onclick="carregarArquivos(currentPath)">🔄 Atualizar</button>
+            <button class="btn-logout" onclick="fazerLogout()">🚪 Sair</button>
+        </div>
+    </div>
+
+    <div class="path-bar" id="current-path">Diretório: /</div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Tipo</th>
+                <th>Caminho / Nome</th>
+                <th>Tamanho</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody id="tabela-arquivos">
+            <tr><td colspan="4" class="loading">Carregando arquivos do Cartão SD...</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+let currentPath = '/';
+
+function encodePath(path) {
+    return path.split('/').map(part => encodeURIComponent(part)).join('/');
+}
+
+function formatBytes(bytes) {
+    if (bytes === 0 || isNaN(bytes)) return '--';
+    if (bytes < 1024) return bytes + ' B';
+    else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    else return (bytes / 1048576).toFixed(2) + ' MB';
+}
+
+function fazerLogout() {
+    // 1. Extrai o host atual (ex: 192.168.100.49)
+    const host = window.location.host;
+    
+    // 2. Faz uma requisição com usuário e senha FALSOS via AJAX para forçar o navegador a esquecer a senha verdadeira
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", "/logout", true, "invalid_user", "invalid_pass");
+    xhr.send();
+
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4) {
+            // 3. Força o redirecionamento passando credenciais inválidas na URL para limpar o cache do navegador
+            window.location.href = "http://logout:logout@" + host + "/logout";
+        }
+    };
+}
+
+async function carregarArquivos(dirPath) {
+    currentPath = dirPath;
+    document.getElementById('current-path').innerText = 'Diretório: ' + currentPath;
+
+    const tbody = document.getElementById('tabela-arquivos');
+    tbody.innerHTML = '<tr><td colspan="4" class="loading">Buscando pasta no ESP32...</td></tr>';
+
+    try {
+        const response = await fetch('/json?dir=' + encodeURIComponent(currentPath));
+        if (!response.ok) throw new Error('Erro ao ler SD');
+        
+        const arquivos = await response.json();
+        tbody.innerHTML = '';
+
+        if (currentPath !== '/' && currentPath !== '') {
+            const trVoltar = document.createElement('tr');
+            trVoltar.className = 'back-row';
+            trVoltar.innerHTML = '<td colspan="4">⬅️ <b>[ VOLTAR PARA A PASTA ANTERIOR ]</b></td>';
+            trVoltar.onclick = () => {
+                let parentPath = currentPath.substring(0, currentPath.lastIndexOf('/'));
+                if (parentPath === '') parentPath = '/';
+                carregarArquivos(parentPath);
+            };
+            tbody.appendChild(trVoltar);
+        }
+
+        if (arquivos.length === 0) {
+            const trVazio = document.createElement('tr');
+            trVazio.innerHTML = '<td colspan="4" class="loading">Pasta vazia.</td>';
+            tbody.appendChild(trVazio);
+            return;
+        }
+
+        arquivos.forEach(item => {
+            const nomeSimples = item.name.split('/').pop();
+
+            // Esconde arquivo de senhas
+            if (nomeSimples.toLowerCase() === 'listpass.txt') return;
+
+            const tr = document.createElement('tr');
+            const isHidden = nomeSimples.startsWith('.');
+            if (isHidden) tr.classList.add('hidden-item');
+
+            let tipoTd = '';
+            if (item.isDir) {
+                tipoTd = '📁 <b>[PASTA]</b>';
+                tr.classList.add('folder-row');
+                tr.title = 'Clique duplo para entrar na pasta';
+                tr.ondblclick = () => carregarArquivos(item.name);
+            } else if (isHidden) {
+                tipoTd = '👻 <i>[OCULTO]</i>';
+            } else {
+                tipoTd = '📄 ARQUIVO';
+            }
+
+            let nomeTd = item.name + (isHidden ? ' <span class="tag-oculto">(oculto)</span>' : '');
+            let tamanhoTd = item.isDir ? '--' : formatBytes(item.size);
+
+            let acoesTd = '';
+            if (!item.isDir) {
+                let rawPath = item.name.startsWith('/') ? item.name : '/' + item.name;
+                let safePath = encodePath(rawPath);
+
+                acoesTd += `<a href="${safePath}" download class="btn-act btn-down">⬇️ Baixar</a> `;
+                
+                if (/\.(txt|log|json|ini|html|css|js)$/i.test(rawPath)) {
+                    acoesTd += `<a href="/edit.html?file=${encodeURIComponent(rawPath)}" class="btn-act btn-edit">✏️ Editar</a> `;
+                }
+
+                acoesTd += `<a href="/deleteXARQ?file=${encodeURIComponent(rawPath)}" onclick="return confirm('Excluir arquivo?')" class="btn-act btn-del">❌ Excluir</a>`;
+            } else {
+                acoesTd = '<small style="color:#00ff66;">(Duplo clique para abrir)</small>';
+            }
+
+            tr.innerHTML = `
+                <td>${tipoTd}</td>
+                <td>${nomeTd}</td>
+                <td>${tamanhoTd}</td>
+                <td>${acoesTd}</td>
+            `;
+
+            tbody.appendChild(tr);
+        });
+
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="4" style="color:#ff4444; text-align:center; padding:20px;">❌ Falha ao carregar lista do SD: ${err.message}</td></tr>`;
+    }
+}
+
+window.onload = () => carregarArquivos('/');
+</script>
+
+</body>
+</html>

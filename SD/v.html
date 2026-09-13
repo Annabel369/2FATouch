@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reprodutor de Mídia ESP32</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            color: #bb86fc;
+            margin-bottom: 20px;
+        }
+        .container {
+            display: flex;
+            flex-direction: row;
+            width: 100%;
+            max-width: 1200px;
+            gap: 20px;
+        }
+        .video-list-container {
+            flex: 1;
+            background-color: #1e1e1e;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .video-player-container {
+            flex: 2;
+            background-color: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+            padding: 10px;
+        }
+        video {
+            width: 100%;
+            max-height: 600px;
+            border-radius: 4px;
+            outline: none;
+            background-color: #000;
+        }
+        .video-item {
+            padding: 12px;
+            border-bottom: 1px solid #333;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+            word-break: break-all;
+            border-radius: 4px;
+        }
+        .video-item:hover {
+            background-color: #333;
+            color: #bb86fc;
+        }
+        .video-item:last-child {
+            border-bottom: none;
+        }
+        .active {
+            background-color: #333;
+            color: #03dac6;
+            font-weight: bold;
+        }
+        .btn {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background-color: #bb86fc;
+            color: #000;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #9965f4;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column-reverse;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Reprodutor de Mídia SD</h1>
+    
+    <div class="container">
+        <div class="video-list-container">
+            <h3 style="margin-top: 0;">Arquivos de Mídia</h3>
+            <div id="video-list">Carregando mídias...</div>
+        </div>
+        
+        <div class="video-player-container">
+            <video id="player" controls>
+                Seu navegador não suporta a tag de vídeo.
+            </video>
+            <h3 id="current-video-title" style="margin-top: 15px; color: #03dac6; text-align: center;">Nenhum vídeo selecionado</h3>
+            <button class="btn" id="fullscreen-btn">Alternar Tela Cheia</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const videoListEl = document.getElementById('video-list');
+            const player = document.getElementById('player');
+            const currentVideoTitle = document.getElementById('current-video-title');
+            const fullscreenBtn = document.getElementById('fullscreen-btn');
+
+            // Extensões de mídia suportadas pelo navegador
+            const mediaExtensions = ['.mkv', '.mp4', '.m4a', '.mp3', '.avi', '.webm', '.ogg'];
+
+            // Busca a lista de arquivos do cartão SD através da rota /json do ESP32
+            fetch('/json')
+                .then(response => response.json())
+                .then(data => {
+                    videoListEl.innerHTML = '';
+                    
+                    // Filtra apenas arquivos de vídeo/áudio
+                    const mediaFiles = data.filter(item => {
+                        if (item.type === 'dir') return false;
+                        const name = item.name.toLowerCase();
+                        return mediaExtensions.some(ext => name.endsWith(ext));
+                    });
+
+                    if (mediaFiles.length === 0) {
+                        videoListEl.innerHTML = '<p>Nenhum arquivo de mídia encontrado no SD.</p>';
+                        return;
+                    }
+
+                    mediaFiles.forEach(fileObj => {
+                        const div = document.createElement('div');
+                        div.className = 'video-item';
+                        div.textContent = `${fileObj.name} (${formatBytes(fileObj.size)})`;
+                        
+                        div.addEventListener('click', () => {
+                            document.querySelectorAll('.video-item').forEach(el => el.classList.remove('active'));
+                            div.classList.add('active');
+                            
+                            playVideo(fileObj.name);
+                        });
+                        
+                        videoListEl.appendChild(div);
+                    });
+                })
+                .catch(err => {
+                    videoListEl.innerHTML = '<p>Erro ao carregar arquivos do cartão SD.</p>';
+                    console.error('Erro:', err);
+                });
+
+            function playVideo(filename) {
+                currentVideoTitle.textContent = filename;
+    
+                // 1. Remove barras do início para não duplicar (ex: "/Download.mp4" vira "Download.mp4")
+                let cleanName = filename.startsWith('/') ? filename.substring(1) : filename;
+    
+                // 2. Codifica espaços e parênteses para formato de URL válido (%20, etc)
+                let encodedPath = '/' + encodeURIComponent(cleanName).replace(/%2F/g, '/');
+    
+                console.log("Requisitando mídia em:", encodedPath);
+    
+                player.src = encodedPath;
+                player.load();
+                player.play().catch(e => console.error("Erro ao iniciar reprodução:", e));
+                }
+
+            function formatBytes(bytes) {
+                if (bytes === 0 || isNaN(bytes)) return '0 B';
+                if (bytes < 1024) return bytes + ' B';
+                else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+                else return (bytes / 1048576).toFixed(2) + ' MB';
+            }
+
+            // Alternar Tela Cheia
+            fullscreenBtn.addEventListener('click', () => {
+                if (!document.fullscreenElement) {
+                    if (player.requestFullscreen) player.requestFullscreen();
+                    else if (player.webkitRequestFullscreen) player.webkitRequestFullscreen();
+                    else if (player.msRequestFullscreen) player.msRequestFullscreen();
+                } else {
+                    if (document.exitFullscreen) document.exitFullscreen();
+                }
+            });
+
+            // Reprodução Sequencial Automática
+            player.addEventListener('ended', () => {
+                const activeItem = document.querySelector('.video-item.active');
+                if (activeItem && activeItem.nextElementSibling) {
+                    activeItem.nextElementSibling.click();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
