@@ -1,4 +1,4 @@
-// ===== CREEPER AUTH v6.3 - DUAL STACK + NETWORK + SEED COLUMNS (VERSÃO FINAL)
+// ===== CREEPER AUTH v7.2.3 - DUAL STACK + NETWORK + SEED COLUMNS (VERSÃO FINAL)
 // =====
 #include "mbedtls/md.h"
 #include <mbedtls/base64.h>
@@ -1915,7 +1915,7 @@ void setup() {
           "<p style='color:#666; font-size:0.8em;'>🔓 MODO INTRANET (HTTP)</p>";
     }
 
-    h += "<h2>CREEPER AUTH v6.3.3</h2>";
+    h += "<h2>CREEPER AUTH v7.2.2</h2>";
 
     // --- NOVO BLOCO: CONTROLO DO VISOR FÍSICO ---
     // h += "<div style='border:1px solid #444; padding:10px;
