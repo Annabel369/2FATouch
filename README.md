@@ -146,7 +146,7 @@ ftp://creeper:1234@192.168.100.49/
 Projeto desenvolvido para uso pessoal e entusiastas de segurança e Minecraft. Use com responsabilidade e mantenha seus backups em dia!
 
 <img width="1109" height="970" alt="image" src="https://github.com/user-attachments/assets/80c89aca-2570-4485-b574-4aa815d71cb5" />
-# 🟩 Creeper Auth v6.3.3 - Cofre Físico com YubiKey
+# 🟩 Creeper Auth v7.2.2 - Cofre Físico com YubiKey
 
 Este projeto transforma um módulo ESP32 com tela touch (CYD - *Cheap Yellow Display*) em um **Autenticador 2FA físico** inspirado no Creeper (Minecraft). O sistema exige um toque físico em uma **YubiKey** para validar o acesso, abrindo mecanicamente a cabeça do Creeper através de um Servo Motor e acendendo uma luz interna via Relé.
 
