@@ -1,6 +1,7 @@
 // ===== CREEPER AUTH v6.3 - DUAL STACK + NETWORK + SEED COLUMNS (VERSÃO FINAL)
 // =====
 #include "mbedtls/md.h"
+#include <mbedtls/base64.h>
 #include "qrcode.h"
 #include <ArduinoJson.h> // Você precisará instalar a biblioteca ArduinoJson
 #include <ESP32FtpServer.h>
@@ -64,7 +65,7 @@ String cfgIP = "192.168.100.";
 String cfgPIX = "810924f7-69b3-4116-8d8f-692e4a25c251"; // Pode ser CPF, E-mail
                                                         // ou Chave Aleatória
 String cfgWiser =
-    "wise.com/pay/me/bryanbuenodossantoss"; // Wiser banco de coversao de
+    "wise.com/pay/me/amauribuenodossantoss"; // Wiser banco de coversao de
                                             // Moedas seu
                                             // wise.com/pay/me/amauribuenodossantoss
 String dynamicWhitelist = "";
@@ -121,6 +122,9 @@ struct WeatherData {
   int code;
 };
 
+const char* headerkeys[] = {"Range"};
+const size_t headerkeyssize = sizeof(headerkeys) / sizeof(char*);
+
 std::vector<TotpAccount> accounts;
 std::vector<SeedRecord> seeds;
 
@@ -130,9 +134,215 @@ int currentIndex = -1;
 int currentSeedIndex = -1;
 int lastSec = -1;
 bool forceRedraw = true;
+bool sessaoAtiva = false; // Controle de sessão customizado
 
 // --- DECLARAÇÕES E FUNÇÕES DE CARREGAMENTO (LOADING SCREEN) ---
 void updateWeather(); // Declaração antecipada
+
+void scanJSON(File dir, String &json) {
+  File entry = dir.openNextFile();
+  bool first = true;
+  while (entry) {
+    if (!first) json += ",";
+    
+    json += "{\"name\":\"" + String(entry.path()) + "\",";
+    json += "\"isDir\":" + String(entry.isDirectory() ? "true" : "false") + ",";
+    json += "\"size\":" + String(entry.size()) + "}";
+    
+    first = false;
+
+    if (entry.isDirectory()) {
+      // Nota: Para manter o JSON simples, varre todos os níveis
+    }
+
+    entry.close();
+    entry = dir.openNextFile();
+  }
+}
+
+void handleLoginRoute() {
+  if (SD.exists("/login.html")) {
+    File file = SD.open("/login.html", FILE_READ);
+    server.streamFile(file, "text/html");
+    file.close();
+  } else {
+    server.send(404, "text/plain", "login.html nao encontrado");
+  }
+}
+
+void handleDoLogin() {
+  if (server.hasArg("user") && server.hasArg("pass")) {
+    String u = server.arg("user");
+    String p = server.arg("pass");
+
+    String hashDigitado = calcularSHA256(p);
+    String hashSalvo = obterHashDoSD();
+
+    if (hashSalvo.length() == 0) {
+      server.send(500, "text/plain", "Erro de leitura no SD");
+      return;
+    }
+
+    if (u == "admin" && hashDigitado.equalsIgnoreCase(hashSalvo)) {
+      sessaoAtiva = true;
+      server.send(200, "text/plain", "OK");
+      return;
+    }
+  }
+  server.send(401, "text/plain", "Incorreto");
+}
+
+// Le o Hash SHA-256 armazenado no arquivo /ListPass.txt no cartão SD
+String obterHashDoSD() {
+  if (!SD.exists("/ListPass.txt")) {
+    Serial.println("Erro: /ListPass.txt nao encontrado no SD");
+    return "";
+  }
+
+  File file = SD.open("/ListPass.txt", FILE_READ);
+  if (!file) {
+    Serial.println("Erro ao abrir /ListPass.txt");
+    return "";
+  }
+
+  String hashSalvo = file.readStringUntil('\n');
+  file.close();
+
+  hashSalvo.trim();
+  hashSalvo.replace("\r", ""); // Limpa caracteres ocultos de quebra de linha
+  return hashSalvo;
+}
+
+void handleLogoutCustom() {
+  sessaoAtiva = false;
+
+  server.sendHeader("Location", "/login.html");
+  server.send(302, "text/plain", "Logout");
+}
+
+void handleEditFile() {
+  if (!server.hasArg("file")) {
+    server.send(400, "text/plain", "Parametro 'file' ausente");
+    return;
+  }
+
+  String path = server.arg("file");
+
+  // Garante que o caminho comece com '/' se necessário
+  if (!path.startsWith("/")) {
+    path = "/" + path;
+  }
+
+  // Se o arquivo existir no SD, serve o editor ou o conteúdo
+  if (SD.exists(path)) {
+    File file = SD.open(path, FILE_READ);
+    // Envia o conteúdo ou a página de edição
+    server.streamFile(file, "text/plain");
+    file.close();
+  } else {
+    server.send(404, "text/plain", "Arquivo nao encontrado: " + path);
+  }
+}
+
+void handleDeleteFile() {
+  if (!server.hasArg("file")) {
+    server.send(400, "text/plain", "Parametro 'file' ausente");
+    return;
+  }
+
+  // Recebe o caminho
+  String path = server.arg("file");
+
+  // Garante que o caminho comece com '/'
+  if (!path.startsWith("/")) {
+    path = "/" + path;
+  }
+
+  // Tenta remover o arquivo do SD
+  if (SD.exists(path)) {
+    if (SD.remove(path)) {
+      // Redireciona de volta para a lista de arquivos
+      server.sendHeader("Location", "/list.html");
+      server.send(303);
+    } else {
+      server.send(500, "text/plain", "Falha ao deletar o arquivo: " + path);
+    }
+  } else {
+    server.send(404, "text/plain", "Arquivo nao encontrado: " + path);
+  }
+}
+
+void handleListHTML() {
+  if (!verificarAcesso()) return;
+
+  if (SD.exists("/list.html")) {
+    File file = SD.open("/list.html", FILE_READ);
+    server.streamFile(file, "text/html");
+    file.close();
+  } else {
+    server.send(404, "text/plain", "list.html nao encontrado no SD");
+  }
+}
+
+// --- Rota de Logout ---
+void handleLogout() {
+  // Trocar o realm força o navegador a descartar as credenciais salvas do realm anterior
+  server.sendHeader("WWW-Authenticate", "Basic realm=\"Sessao Encerrada - Re-login Necessario\"");
+  
+  String html = "<!DOCTYPE html><html lang='pt-BR'><head><meta charset='UTF-8'>";
+  html += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
+  html += "<title>Sessao Encerrada</title>";
+  html += "<style>";
+  html += "body { font-family: sans-serif; background-color: #121212; color: #e0e0e0; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }";
+  html += ".card { background: #1a1a1a; padding: 30px; border-radius: 8px; border: 1px solid #333; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); max-width: 420px; }";
+  html += "h2 { color: #ff4444; margin-bottom: 15px; }";
+  html += "p { color: #aaa; margin-bottom: 20px; font-size: 14px; }";
+  html += ".status { background: #261313; color: #ff6666; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 12px; margin-bottom: 20px; border: 1px solid #552222; }";
+  html += "a { display: inline-block; background: #00ff66; color: #000; text-decoration: none; padding: 10px 20px; font-weight: bold; border-radius: 4px; }";
+  html += "a:hover { background: #00cc52; }";
+  html += "</style></head><body>";
+  html += "<div class='card'>";
+  html += "<h2>🔒 Sessão Encerrada</h2>";
+  html += "<div class='status'>SESSAO_AUTENTICADA = FALSE<br>CREDENCIAIS_REVOGADAS</div>";
+  html += "<p>Suas credenciais foram apagadas com sucesso do navegador.</p>";
+  html += "<a href='/list.html'>🔑 Fazer Login Novamente</a>";
+  html += "</div></body></html>";
+
+  server.send(401, "text/html", html);
+}
+
+
+void handleListJSON() {
+
+  if (!verificarAcesso()) return; // Impede a execução se a senha falhar
+  String dirPath = "/";
+  if (server.hasArg("dir")) {
+    dirPath = server.arg("dir");
+  }
+
+  File root = SD.open(dirPath);
+  String json = "[";
+  
+  if (root && root.isDirectory()) {
+    File entry = root.openNextFile();
+    bool first = true;
+    while (entry) {
+      if (!first) json += ",";
+      
+      json += "{\"name\":\"" + String(entry.path()) + "\",";
+      json += "\"isDir\":" + String(entry.isDirectory() ? "true" : "false") + ",";
+      json += "\"size\":" + String(entry.size()) + "}";
+      
+      first = false;
+      entry.close();
+      entry = root.openNextFile();
+    }
+    root.close();
+  }
+  
+  json += "]";
+  server.send(200, "application/json", json);
+}
 
 void drawLoadingCreeper(int cx, int cy, int cSize) {
   tft.fillRect(cx, cy, cSize, cSize, TFT_GREEN);
@@ -228,6 +438,146 @@ String urlVersaoGitHub =
 String versaoNova = ""; // Vai guardar a versão que o GitHub responder
 bool updateDisponivel = false;
 
+// Função auxiliar para calcular SHA-256 de uma String
+String calcularSHA256(String input) {
+  byte shaResult[32];
+  mbedtls_md_context_t ctx;
+  mbedtls_md_type_t md_type = MBEDTLS_MD_SHA256;
+
+  mbedtls_md_init(&ctx);
+  mbedtls_md_setup(&ctx, mbedtls_md_info_from_type(md_type), 0);
+  mbedtls_md_starts(&ctx);
+  mbedtls_md_update(&ctx, (const unsigned char*) input.c_str(), input.length());
+  mbedtls_md_finish(&ctx, shaResult);
+  mbedtls_md_free(&ctx);
+
+  String hashStr = "";
+  for (int i = 0; i < 32; i++) {
+    char buf[3];
+    sprintf(buf, "%02x", shaResult[i]);
+    hashStr += buf;
+  }
+  return hashStr;
+}
+
+// 2. Decodifica o cabeçalho Base64 enviado pelo navegador (HTTP Basic Auth)
+String decodificarBase64(String input) {
+  unsigned char output[128];
+  size_t output_len = 0;
+  
+  int ret = mbedtls_base64_decode(output, sizeof(output) - 1, &output_len, 
+                                  (const unsigned char*) input.c_str(), input.length());
+  if (ret == 0) {
+    output[output_len] = '\0';
+    return String((char*) output);
+  }
+  return "";
+}
+
+// 3. Valida se a senha digitada bate com o Hash do SD
+bool verificarAcesso() {
+  if (!SD.exists("/ListPass.txt")) {
+    server.send(500, "text/plain", "Erro: ListPass.txt nao encontrado no SD");
+    return false;
+  }
+
+  // 1. Lê o Hash salvo no SD e remove todos os caracteres invisiveis (\r, \n, espaços)
+  File file = SD.open("/ListPass.txt", FILE_READ);
+  if (!file) return false;
+  String hashSalvo = file.readStringUntil('\n');
+  file.close();
+  
+  hashSalvo.trim();
+  hashSalvo.replace("\r", ""); // Remove CR do Windows
+
+  // 2. Se não veio o cabeçalho "Authorization", pede o login ao navegador
+  if (!server.hasHeader("Authorization")) {
+    
+    server.sendHeader("WWW-Authenticate", "Basic realm=\"Acesso Restrito ao SD\"");
+    server.send(401, "text/plain", "Acesso nao autorizado");
+    return false;
+  }
+
+  // 3. Captura e decodifica as credenciais enviadas
+  String authHeader = server.header("Authorization");
+  if (authHeader.startsWith("Basic ")) {
+    String base64Credentials = authHeader.substring(6);
+    String decodedStr = decodificarBase64(base64Credentials); // Formato "usuario:senha"
+    
+    int colonIndex = decodedStr.indexOf(':');
+    if (colonIndex != -1) {
+      String usuarioDigitado = decodedStr.substring(0, colonIndex);
+      String senhaDigitada = decodedStr.substring(colonIndex + 1);
+
+      // Gera o SHA-256 da senha que você acabou de digitar na caixa do navegador
+      String hashSenhaDigitada = calcularSHA256(senhaDigitada);
+      hashSenhaDigitada.toLowerCase();
+      hashSalvo.toLowerCase();
+
+      // DEBUG VIA SERIAL (Para você ver se o hash bateu)
+      Serial.println("--- TENTATIVA DE LOGIN ---");
+      Serial.println("Usuario: " + usuarioDigitado);
+      Serial.println("Hash Digitado: " + hashSenhaDigitada);
+      Serial.println("Hash no SD:       " + hashSalvo);
+
+      // Compara se o Usuário é 'admin' e se os Hashes são idênticos
+      if (usuarioDigitado == "admin" && hashSenhaDigitada.equalsIgnoreCase(hashSalvo)) {
+        Serial.println(">> ACESSO PERMITIDO <<");
+        return true; 
+      } else {
+        Serial.println(">> ACESSO NEGADO: Hash incorreto <<");
+      }
+    }
+  }
+
+  // Se errou a senha/usuário, força a caixa de login a reaparecer
+  server.sendHeader("WWW-Authenticate", "Basic realm=\"Acesso Restrito ao SD\"");
+  server.send(401, "text/plain", "Usuario ou senha incorretos");
+  return false;
+}
+
+// Função para validar se o usuário e senha informados no pop-up estão corretos
+bool autenticarUsuario() {
+  // Lemos o hash esperado do arquivo ListPass.txt no SD
+  if (!SD.exists("/ListPass.txt")) {
+    Serial.println("Erro: Arquivo ListPass.txt nao encontrado no SD!");
+    return false;
+  }
+
+  File file = SD.open("/ListPass.txt", FILE_READ);
+  if (!file) return false;
+
+  String hashSalvo = file.readStringUntil('\n');
+  hashSalvo.trim(); // Remove quebras de linha/espaços
+  file.close();
+
+  // Verifica se o cliente enviou credenciais HTTP Basic Auth
+  if (!server.authenticate("admin", "dummy")) { // Teste rápido de envio de credencial
+    // Captura o que o usuário digitou
+    String userDigitado = server.arg("user"); // O WebServer valida internamente
+  }
+
+  // Pegamos a senha enviada pelo navegador via HTTP Auth
+  // O server.requestHeader("Authorization") ou validação interna do WebServer
+  // Vamos usar uma abordagem onde comparamos a senha recebida:
+  
+  // Como o server.authenticate() do ESP32 checa diretamente o texto puro,
+  // fazemos a checagem calculando o hash da senha enviada:
+  
+  // Para extrair a senha enviada no header de autenticação Basic:
+  if (server.hasHeader("Authorization")) {
+    String authHeader = server.header("Authorization");
+    if (authHeader.startsWith("Basic ")) {
+      // O header é Base64(usuario:senha)
+      // Mas para simplificar usando a função nativa do WebServer:
+    }
+  }
+
+  return false;
+}
+
+
+
 WiFiClientSecure client;
 WeatherData weather;
 
@@ -249,29 +599,89 @@ bool tft_output(int16_t x, int16_t y, uint16_t w, uint16_t h,
 
 void handleFileRead() {
   String path = server.uri();
-  if (path.endsWith("/"))
-    path += "index.html";
+  path = uriDecode(path);
+  if (path.endsWith("/")) path += "index.html";
 
-  // Define o tipo de conteúdo (MIME type)
   String contentType = "text/plain";
-  if (path.endsWith(".html"))
-    contentType = "text/html";
-  else if (path.endsWith(".jpg"))
-    contentType = "image/jpeg";
-  else if (path.endsWith(".png"))
-    contentType = "image/png";
-  else if (path.endsWith(".ico"))
-    contentType = "image/x-icon";
+  if (path.endsWith(".html"))       contentType = "text/html";
+  else if (path.endsWith(".css"))  contentType = "text/css";
+  else if (path.endsWith(".js"))   contentType = "application/javascript";
+  else if (path.endsWith(".json")) contentType = "application/json";
+  else if (path.endsWith(".jpg"))  contentType = "image/jpeg";
+  else if (path.endsWith(".png"))  contentType = "image/png";
+  else if (path.endsWith(".ico"))  contentType = "image/x-icon";
+  else if (path.endsWith(".mp4"))  contentType = "video/mp4";
+  else if (path.endsWith(".mp3"))  contentType = "audio/mpeg";
 
-  // Tenta abrir o arquivo no SD
-  if (SD.exists(path)) {
-    File file = SD.open(path, "r");
-    server.streamFile(file, contentType);
-    file.close();
-    return;
+  if (!SD.exists(path)) {
+    // Tenta verificar sem a barra inicial caso o SD exija
+    if (path.startsWith("/") && SD.exists(path.substring(1))) {
+      path = path.substring(1);
+    } else {
+      server.send(404, "text/plain", "Arquivo nao encontrado no SD");
+      return;
+    }
   }
 
-  server.send(404, "text/plain", "Arquivo nao encontrado no SD");
+  File file = SD.open(path, "r");
+  
+  // Para vídeos MP4, informamos que o servidor aceita requisições por intervalo de bytes
+  server.sendHeader("Accept-Ranges", "bytes");
+
+  if (server.hasHeader("Range")) {
+    String range = server.header("Range");
+    // Extrai a posição inicial requisitada pelo navegador
+    int rangeStart = 0;
+    int equalIdx = range.indexOf('=');
+    int dashIdx = range.indexOf('-');
+    if (equalIdx != -1 && dashIdx != -1) {
+      String startStr = range.substring(equalIdx + 1, dashIdx);
+      if (startStr.length() > 0) rangeStart = startStr.toInt();
+    }
+
+    size_t totalSize = file.size();
+    if (rangeStart < totalSize) {
+      file.seek(rangeStart);
+      size_t contentLength = totalSize - rangeStart;
+
+      server.sendHeader("Content-Range", "bytes " + String(rangeStart) + "-" + String(totalSize - 1) + "/" + String(totalSize));
+      server.setContentLength(contentLength);
+      server.send(206, contentType, ""); // HTTP 206 Partial Content
+
+      WiFiClient client = server.client();
+      uint8_t buffer[2048]; // Buffer otimizado de 2KB
+      while (client.connected() && file.available()) {
+        size_t bytesRead = file.read(buffer, sizeof(buffer));
+        client.write(buffer, bytesRead);
+      }
+      file.close();
+      return;
+    }
+  }
+
+  // Se não houver requisição de Range, faz o stream padrão
+  server.streamFile(file, contentType);
+  file.close();
+}
+
+String uriDecode(String str) {
+  String decoded = "";
+  char c;
+  for (int i = 0; i < str.length(); i++) {
+    c = str.charAt(i);
+    if (c == '+') {
+      decoded += ' ';
+    } else if (c == '%' && i + 2 < str.length()) {
+      char code1 = str.charAt(i + 1);
+      char code2 = str.charAt(i + 2);
+      c = (char) strtol((String(code1) + String(code2)).c_str(), NULL, 16);
+      decoded += c;
+      i += 2;
+    } else {
+      decoded += c;
+    }
+  }
+  return decoded;
 }
 
 void checkUpdate() {
@@ -1260,6 +1670,7 @@ void setup() {
   tft.setSwapBytes(false);
 
   // --- DENTRO DO SEU void setup() ---
+  server.collectHeaders(headerkeys, headerkeyssize);
   pinMode(PINO_RELE_LUZ, OUTPUT);
   digitalWrite(PINO_RELE_LUZ, LOW); // Relé desligado
 
@@ -1401,6 +1812,7 @@ void setup() {
 
   // --- Rotas ---
   server.on("/", [css, ehMickey]() {
+
     // Cabeçalho e CSS
     String h =
         "<!DOCTYPE html><html lang='pt'><head><link rel='shortcut icon' "
@@ -1694,6 +2106,45 @@ void setup() {
                   "<script>location.href='/manage';</script>");
     }
   });
+
+  // REGISTRE ESTA LINHA OBRIGATORIAMENTE para ler o cabeçalho de login do navegador:
+  const char * headerkeys[] = {"Authorization"} ;
+  size_t headerkeyssize = sizeof(headerkeys)/sizeof(char*);
+  server.collectHeaders(headerkeys, headerkeyssize);
+
+  // Registra a rota do JSON
+  server.on("/json", handleListJSON);
+
+  // Registra as rotas de Editar e Deletar
+  server.on("/editXARQ", handleEditFile);
+  server.on("/deleteXARQ", handleDeleteFile);
+
+  // Registra rota de logout
+  server.on("/login.html", handleLoginRoute);
+  server.on("/doLogin", HTTP_POST, handleDoLogin);
+  server.on("/logout", handleLogoutCustom);
+
+  server.on("/saveXARQ", HTTP_POST, []() {
+  if (!verificarAcesso()) return;
+
+  if (server.hasArg("file") && server.hasArg("data")) {
+    String path = server.arg("file");
+    String conteudo = server.arg("data");
+
+    if (!path.startsWith("/")) path = "/" + path;
+
+    File file = SD.open(path, FILE_WRITE);
+    if (file) {
+      file.print(conteudo);
+      file.close();
+      server.send(200, "text/plain", "OK");
+    } else {
+      server.send(500, "text/plain", "Erro ao abrir arquivo para escrita");
+    }
+  } else {
+    server.send(400, "text/plain", "Parametros ausentes");
+  }
+});
 
   server.on("/network", [css, ehMickey]() {
     if (!ehMickey())
