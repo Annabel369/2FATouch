@@ -246,6 +246,13 @@ também acho importante um kit de fios deste já que só vem  1 fio que pode dar
 
 <img width="1382" height="443" alt="image" src="https://github.com/user-attachments/assets/073f3713-da71-4e00-82d8-2793353429e1" />
 
+ou de fios 
+
+5 pçs/lote JST 1.25mm para DuPont 2. Conexão de cabo 54mm-1P/fio terminal longo 10/20/30cm Fio DuPont 2p 3p 4p 5p-12p
+
+<img width="1596" height="586" alt="image" src="https://github.com/user-attachments/assets/a1a53d34-9dc8-45d7-92d0-0f4b67992f95" />
+
+
 
 
 ## 1. Módulo Relé (Para a Luz e a Trava)
