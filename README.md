@@ -45,6 +45,9 @@ https://github.com/Annabel369/PanelMinecraft/blob/main/User_Setup.h
 
 Procura algum projeto de impressoar 3d que simule o projeto original do creeper do Cinepolis 
 
+<img width="1628" height="778" alt="image" src="https://github.com/user-attachments/assets/207e916e-f8be-487d-a34d-79fa48163d60" />
+
+
 https://www.crealitycloud.com/pt/model-detail/minecraft-creeper-printing-model?source=5
 
 
