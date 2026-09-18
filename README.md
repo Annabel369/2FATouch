@@ -239,6 +239,14 @@ Conversor Buck DC-DC 12V para 3.3V 5V 12V Saída Tripla 800mA Fonte de alimenta�
 
 <img width="1587" height="699" alt="image" src="https://github.com/user-attachments/assets/2198e241-821e-4f80-b3ca-3277d7886401" />
 
+também acho importante um kit de fios deste já que só vem  1 fio que pode dar defeito 
+
+5 pçs/lote JST 1.25mm para DuPont 2. Conexão de cabo 54mm-1P/fio terminal longo 10/20/30cm Fio DuPont 2p 3p 4p 5p-12p
+
+
+<img width="1382" height="443" alt="image" src="https://github.com/user-attachments/assets/073f3713-da71-4e00-82d8-2793353429e1" />
+
+
 
 ## 1. Módulo Relé (Para a Luz e a Trava)
 Para conectar diretamente no pino da placa CYD (ESP32), o ideal é usar um relé que funcione bem com sinais lógicos de **3.3V**.
