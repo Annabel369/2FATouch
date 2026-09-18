@@ -1,5 +1,7 @@
 <img width="229" height="76" alt="image" src="https://github.com/user-attachments/assets/e4cbc7b1-96ca-43fa-ad09-fae37f71b348" />
 
+OBS: dependendo do Modelo pesquise no codigo inverter se tiver com a cor Branca ta invertida a cor no caso o meu esp32 true para a cor funcionar e do meu  Irmao e False modelo de fabricacao
+
 
 ![WIN_20260106_03_42_48_Pro](https://github.com/user-attachments/assets/9bae5c3f-6ea4-4f8b-a3c6-ab38e6009a8d)
 
@@ -230,6 +232,13 @@ O sistema não abre a porta com um simples comando web aberto. Ele exige uma sen
 Abaixo está a lista completa dos componentes físicos necessários para montar a mecânica do Creeper (abertura da cabeça, iluminação) e a automação da porta secreta.
 
 ---
+
+Antes de comeca este projeto eu recomendo um Distribuidor de 12v para 5v e 3.3v no mesmo GND para ligas as pecas de outras voltagem sem sai do GND de comunicacao
+
+Conversor Buck DC-DC 12V para 3.3V 5V 12V Saída Tripla 800mA Fonte de alimentação de alta eficiência para Arduino ESP8266 ESP32 Breadboard
+
+<img width="1587" height="699" alt="image" src="https://github.com/user-attachments/assets/2198e241-821e-4f80-b3ca-3277d7886401" />
+
 
 ## 1. Módulo Relé (Para a Luz e a Trava)
 Para conectar diretamente no pino da placa CYD (ESP32), o ideal é usar um relé que funcione bem com sinais lógicos de **3.3V**.
