@@ -47,6 +47,8 @@ Procura algum projeto de impressoar 3d que simule o projeto original do creeper 
 
 <img width="1628" height="778" alt="image" src="https://github.com/user-attachments/assets/207e916e-f8be-487d-a34d-79fa48163d60" />
 
+https://www.crealitycloud.com/pt/model-detail/minecraft-creeper-bank-secret-storage?source=3&profileId=68dd2950aaaa058eab1acdcb
+
 
 https://www.crealitycloud.com/pt/model-detail/minecraft-creeper-printing-model?source=5
 
