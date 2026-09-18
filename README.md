@@ -256,6 +256,9 @@ ou de fios
 
 
 ## 1. Módulo Relé (Para a Luz e a Trava)
+
+<img width="1596" height="586" alt="image" src="https://github.com/user-attachments/assets/38970eb4-7f46-44e0-8ad2-b5a7c6f03650" />
+
 Para conectar diretamente no pino da placa CYD (ESP32), o ideal é usar um relé que funcione bem com sinais lógicos de **3.3V**.
 
 *   **O que buscar nas lojas:** `Módulo Relé 1 Canal 3.3V Optoacoplado` ou `Módulo Relé 3V Arduino`.
@@ -265,6 +268,9 @@ Para conectar diretamente no pino da placa CYD (ESP32), o ideal é usar um relé
 ---
 
 ## 2. O Motor (Braço Mecânico)
+
+<img width="1596" height="586" alt="image" src="https://github.com/user-attachments/assets/d8f96498-f808-473f-a319-89f6cef088d4" />
+
 Para levantar a cabeça do Creeper ou abrir a porta, você não precisará de um braço robótico inteiro. Apenas um Servo Motor forte e uma haste metálica já resolvem o problema de forma limpa e escondida.
 
 *   **O Motor:** Busque por `Micro Servo MG90S`. 
@@ -277,6 +283,12 @@ Para levantar a cabeça do Creeper ou abrir a porta, você não precisará de um
 Para automatizar a porta secreta do quarto com segurança e estética embutida, a melhor opção são as travas tipo solenoide.
 
 *   **O que buscar nas lojas:** `Mini Trava Eletromagnética Solenoide 12V` ou `Fechadura Solenoide Lingueta 12V`.
+
+*   
+<img width="1596" height="586" alt="image" src="https://github.com/user-attachments/assets/b05e09eb-5d9d-40a7-8c3c-64f326f80edd" />
+
+
+
 
 > ⚡ **Aviso de Energia:** Estas travas puxam muita corrente (Amperes) e operam em **12 Volts**. O seu ESP32 NÃO consegue alimentá-las diretamente. Será necessário o uso de uma fonte de energia 12V externa ligada à tomada. O Módulo Relé atuará apenas como o "interruptor" para liberar essa energia.
 
