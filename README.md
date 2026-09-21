@@ -304,3 +304,5 @@ Para automatizar a porta secreta do quarto com segurança e estética embutida, 
 3. **Caminho do Negativo:** O fio negativo (GND) da trava liga diretamente no fio negativo da fonte 12V.
 
 🎯 **Ação Final:** Quando a YubiKey for tocada e validada, o ESP32 abrirá a cabeça do Creeper e ativará o Relé. O circuito do relé se fecha, permitindo a passagem dos 12V que puxarão a lingueta metálica da trava, destrancando a porta secreta instantaneamente!
+
+FPS OPTION https://github.com/Annabel369/FPSNVIA/tree/main
