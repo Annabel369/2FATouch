@@ -1,3 +1,5 @@
+https://www.youtube.com/watch?v=Y1EU-4kPpXc
+
 <img width="229" height="76" alt="image" src="https://github.com/user-attachments/assets/e4cbc7b1-96ca-43fa-ad09-fae37f71b348" />
 
 OBS: dependendo do Modelo pesquise no codigo inverter se tiver com a cor Branca ta invertida a cor no caso o meu esp32 true para a cor funcionar e do meu  Irmao e False modelo de fabricacao
