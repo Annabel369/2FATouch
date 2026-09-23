@@ -68,6 +68,19 @@ https://www.crealitycloud.com/pt/model-detail/minecraft-creeper-bank-secret-stor
 
 https://www.crealitycloud.com/pt/model-detail/minecraft-creeper-printing-model?source=5
 
+           🟩🟩🟩
+           🟩🟩
+          🟩
+🟧🟧🟧🟧🟧🟧🟧🟧
+🟧⬛⬛🟧🟧⬛⬛🟧
+🟧⬛⬛🟧🟧⬛⬛🟧
+🟧🟧🟧🟧🟧🟧🟧🟧
+🟧🟧🟧⬛⬛🟧🟧🟧
+🟧⬛⬛⬛⬛⬛⬛🟧
+🟧⬛⬛⬛⬛⬛⬛🟧
+🟧⬛⬛🟧🟧⬛⬛🟧
+🟧🟧🟧🟧🟧🟧🟧🟧
+
 
 
 # 🟢 Creeper Auth v7.2.2 - Dual Stack & Crypto Vault
