@@ -1,6 +1,6 @@
 https://www.youtube.com/watch?v=Y1EU-4kPpXc
 
-🟩 🟩 🟩 🟩 🟩 🟩 🟩 🟩
+🟩 🟩 🟩 🟩 🟩 🟩 🟩 🟩  
 🟩 ⬛ ⬛ 🟩 🟩 ⬛ ⬛ 🟩  
 🟩 ⬛ ⬛ 🟩 🟩 ⬛ ⬛ 🟩  
 🟩 🟩 🟩 🟩 🟩 🟩 🟩 🟩  
