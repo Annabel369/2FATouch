@@ -35,7 +35,11 @@ Fonte: https://randomnerdtutorials.com/lvgl-cheap-yellow-display-esp32-2432s028r
 
 DNS NAME IPV6 se nao  so pelo ipv4
 
-http://creeper.local/
+http://IP/login.html
+
+or
+
+http://creeper.local/login.html
 
 <img width="1244" height="565" alt="image" src="https://github.com/user-attachments/assets/13e27c97-57c9-4a0f-b830-3d750f9c219d" />
 
