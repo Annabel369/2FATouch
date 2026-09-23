@@ -855,6 +855,9 @@ void drawPCPerformance() {
 
   tft.setTextColor(TFT_ORANGE, TFT_BLACK);
   tft.drawString("GPU TEMP: " + String(pcTemp) + "C", 30, 190, 4);
+
+  if (pcTemp <= 0) {desligarTela();}
+
   tft.setTextColor(TFT_YELLOW, TFT_BLACK);
   tft.fillRect(30, 215, (pcTemp * 2), 10, (pcTemp > 75) ? TFT_RED : TFT_YELLOW);
 }
