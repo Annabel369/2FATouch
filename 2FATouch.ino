@@ -409,24 +409,20 @@ void handleListJSON() {
 }
 
 void drawLoadingCreeper(int cx, int cy, int cSize) {
-  int p = cSize / 8;
-  
-  // Fundo Verde (8x8)
-  tft.fillRect(cx, cy, cSize, cSize, TFT_GREEN);
+  int pX = cSize / 8; // Proporção da largura (8 colunas)
+  int pY = cSize / 9; // Proporção da altura (9 linhas)
 
-  // Linha 1 e 2: Olhos (2x2)
-  tft.fillRect(cx + (1 * p), cy + (1 * p), 2 * p, 2 * p, TFT_BLACK); // Olho Esquerdo
-  tft.fillRect(cx + (5 * p), cy + (1 * p), 2 * p, 2 * p, TFT_BLACK); // Olho Direito
+  tft.fillRect(cx, cy, cSize, cSize, TFT_GREEN);                         // 1. Fundo Verde
 
-  // Linha 4: Topo do Nariz (2x1)
-  tft.fillRect(cx + (3 * p), cy + (4 * p), 2 * p, 1 * p, TFT_BLACK);
+  tft.fillRect(cx + (1 * pX), cy + (1 * pY), 2 * pX, 2 * pY, TFT_BLACK); // 2. Olho Esquerdo (linhas 1 e 2)
+  tft.fillRect(cx + (5 * pX), cy + (1 * pY), 2 * pX, 2 * pY, TFT_BLACK); // 3. Olho Direito (linhas 1 e 2)
 
-  // Linha 5: Parte Larga da Boca / Nariz (6x1)
-  tft.fillRect(cx + (1 * p), cy + (5 * p), 6 * p, 1 * p, TFT_BLACK);
+  tft.fillRect(cx + (3 * pX), cy + (4 * pY), 2 * pX, 1 * pY, TFT_BLACK); // 4. Topo do Nariz (linha 4)
 
-  // Linha 6: Pernas da Boca (2x1 de cada lado)
-  tft.fillRect(cx + (1 * p), cy + (6 * p), 2 * p, 1 * p, TFT_BLACK); // Esquerda
-  tft.fillRect(cx + (5 * p), cy + (6 * p), 2 * p, 1 * p, TFT_BLACK); // Direita
+  tft.fillRect(cx + (1 * pX), cy + (5 * pY), 6 * pX, 2 * pY, TFT_BLACK); // 5. Meio Lardo da Boca (linhas 5 e 6)
+
+  tft.fillRect(cx + (1 * pX), cy + (7 * pY), 2 * pX, 1 * pY, TFT_BLACK); // 6. Perna Esquerda (linha 7)
+  tft.fillRect(cx + (5 * pX), cy + (7 * pY), 2 * pX, 1 * pY, TFT_BLACK); // 7. Perna Direita (linha 7)
 }
 
 void drawLoadingScreen(int percent) {
