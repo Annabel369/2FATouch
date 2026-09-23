@@ -1743,15 +1743,25 @@ void drawInfo(unsigned long epoch) {
   tft.drawCentreString(weather.main, 120, 280, 4);
 }
 
+void desligarTela() {
+  digitalWrite(TFT_BL, LOW); // Apaga os LEDs de fundo
+}
+
+void ligarTela() {
+  digitalWrite(TFT_BL, HIGH); // Acende os LEDs de fundo
+}
+
 // --- Setup ---
 void setup() {
   Serial.begin(115200);
+  // Configura o pino de Backlight como saída
+  pinMode(TFT_BL, OUTPUT);
 
   SPI.setFrequency(20000000);
   SPI.begin(18, 19, 23, SD_CS);
   tft.init();
   tft.setRotation(0);
-  tft.invertDisplay(true); // Inverte as cores da tela conforme solicitado
+  tft.invertDisplay(false); // Inverte as cores da tela conforme solicitado
   tft.fillScreen(TFT_BLACK);
 
   // INICIA O TOUCH (DEPOIS DO TFT)
@@ -2265,6 +2275,7 @@ server.send(200, "text/html", h);
   });
 
   server.on("/network", [css, ehMickey]() {
+    desligarTela();
     if (!verificarAcesso())
     return;
     if (!ehMickey())
@@ -2311,6 +2322,7 @@ server.send(200, "text/html", h);
   });
 
   server.on("/vault", [css, ehMickey]() {
+    ligarTela();
     if (!verificarAcesso())
     return;
     if (!ehMickey())
@@ -2496,6 +2508,7 @@ void loop() {
       // z == 4095 significa que o SPI não conseguiu ler nada (desconectado ou
       // conflito) Um toque normal tem pressao entre 200 e 2000
       if (p.z > 100 && p.z < 3500) {
+        ligarTela();
         proximaTela();
         last_tap = millis();
       }
