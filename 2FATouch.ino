@@ -2014,7 +2014,10 @@ void setup() {
     h += "  <option value='-6'>VISOR: QR CODE WISER</option>"; // <-- ADICIONE
                                                                // ESTA LINHA
 
+
     for (int i = 0; i < accounts.size(); i++) {
+      if (!verificarAcesso())
+    return;
       h +=
           "<option value='" + String(i) + "'>" + accounts[i].name + "</option>";
     }
