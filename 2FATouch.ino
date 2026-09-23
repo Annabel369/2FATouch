@@ -127,6 +127,10 @@ struct WeatherData {
 const char *headerkeys[] = {"Range", "Authorization"};
 const size_t headerkeyssize = sizeof(headerkeys) / sizeof(char *);
 
+const int PIN_RED   = 4;
+const int PIN_GREEN = 16;
+const int PIN_BLUE  = 17;
+
 std::vector<TotpAccount> accounts;
 std::vector<SeedRecord> seeds;
 
@@ -1744,10 +1748,12 @@ void drawInfo(unsigned long epoch) {
 
 void desligarTela() {
   digitalWrite(TFT_BL, LOW); // Apaga os LEDs de fundo
+  digitalWrite(PIN_RED, LOW);digitalWrite(PIN_GREEN, HIGH);digitalWrite(PIN_BLUE, HIGH);
 }
 
 void ligarTela() {
   digitalWrite(TFT_BL, HIGH); // Acende os LEDs de fundo
+  digitalWrite(PIN_GREEN, LOW);
 }
 
 // --- Setup ---
@@ -1755,6 +1761,15 @@ void setup() {
   Serial.begin(115200);
   // Configura o pino de Backlight como saída
   pinMode(TFT_BL, OUTPUT);
+  // Configura os pinos como saída
+  pinMode(PIN_RED, OUTPUT);
+  pinMode(PIN_GREEN, OUTPUT);
+  pinMode(PIN_BLUE, OUTPUT);
+
+  // Inicia com todos os LEDs DESLIGADOS (HIGH = Desligado)
+  digitalWrite(PIN_RED, HIGH);
+  digitalWrite(PIN_GREEN, HIGH);
+  digitalWrite(PIN_BLUE, HIGH);
 
   SPI.setFrequency(20000000);
   SPI.begin(18, 19, 23, SD_CS);
@@ -1815,8 +1830,8 @@ void setup() {
   Serial.println("ftp://creeper:k9R7xM2pQ4vL8wT5@192.168.100.49/");
   Serial.println("-------------------------");
   // No setup, após conectar no Wi-Fi:
-  if (MDNS.begin("creeper")) {
-    Serial.println("MDNS responder iniciado: http://creeper.local");
+  if (MDNS.begin("steve")) {
+    Serial.println("MDNS responder iniciado: http://steve.local");
   }
 
   timeClient.begin();
