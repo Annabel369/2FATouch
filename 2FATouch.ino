@@ -1,7 +1,7 @@
-// ===== CREEPER AUTH v7.2.3 - DUAL STACK + NETWORK + SEED COLUMNS (VERSÃO FINAL)
+// ===== CREEPER AUTH v7.2.2 - DUAL STACK + NETWORK + SEED COLUMNS (VERSÃO
+// FINAL)
 // =====
 #include "mbedtls/md.h"
-#include <mbedtls/base64.h>
 #include "qrcode.h"
 #include <ArduinoJson.h> // Você precisará instalar a biblioteca ArduinoJson
 #include <ESP32FtpServer.h>
@@ -17,20 +17,21 @@
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <WiFiUdp.h>
+#include <mbedtls/base64.h>
 #include <vector>
 
 // --- TOUCH DO CYD ---
 #include <XPT2046_Touchscreen.h>
 
-#include <ESP32Servo.h> 
+#include <ESP32Servo.h>
 
 Servo servoCreeper;
-const int PINO_RELE_LUZ = 22; // Alterado de 26 para 22 (livre no conector traseiro)
-const int PINO_SERVO = 27;    // Mantido no 27 (livre no conector traseiro)
+const int PINO_RELE_LUZ =
+    22; // Alterado de 26 para 22 (livre no conector traseiro)
+const int PINO_SERVO = 27; // Mantido no 27 (livre no conector traseiro)
 
-unsigned long tempoAberto = 0; 
+unsigned long tempoAberto = 0;
 bool hardwareAtivo = false;
-
 
 #define XPT2046_IRQ 36
 #define XPT2046_MOSI 32
@@ -67,8 +68,8 @@ String cfgPIX = "810924f7-69b3-4116-8d8f-692e4a25c251"; // Pode ser CPF, E-mail
                                                         // ou Chave Aleatória
 String cfgWiser =
     "wise.com/pay/me/amauribuenodossantoss"; // Wiser banco de coversao de
-                                            // Moedas seu
-                                            // wise.com/pay/me/amauribuenodossantoss
+                                             // Moedas seu
+                                             // wise.com/pay/me/amauribuenodossantoss
 String dynamicWhitelist = "";
 String weatherApiKey =
     "fff7ce772990b49a7efd6b1a6827c687"; // https://home.openweathermap.org/api_keys
@@ -101,7 +102,7 @@ String getFooter() {
 
   return "<footer>'Copyright' 2025-" + String(ano) +
          " Criado por Amauri Bueno dos Santos com apoio da Gemini. "
-         "https://github.com/Annabel369/2FA</footer>";
+         "https://github.com/Annabel369/2FATouch</footer>";
 }
 
 char packetBuffer[255];
@@ -123,8 +124,8 @@ struct WeatherData {
   int code;
 };
 
-const char* headerkeys[] = {"Range"};
-const size_t headerkeyssize = sizeof(headerkeys) / sizeof(char*);
+const char *headerkeys[] = {"Range", "Authorization"};
+const size_t headerkeyssize = sizeof(headerkeys) / sizeof(char *);
 
 std::vector<TotpAccount> accounts;
 std::vector<SeedRecord> seeds;
@@ -144,12 +145,13 @@ void scanJSON(File dir, String &json) {
   File entry = dir.openNextFile();
   bool first = true;
   while (entry) {
-    if (!first) json += ",";
-    
+    if (!first)
+      json += ",";
+
     json += "{\"name\":\"" + String(entry.path()) + "\",";
     json += "\"isDir\":" + String(entry.isDirectory() ? "true" : "false") + ",";
     json += "\"size\":" + String(entry.size()) + "}";
-    
+
     first = false;
 
     if (entry.isDirectory()) {
@@ -162,11 +164,11 @@ void scanJSON(File dir, String &json) {
 }
 
 void handleUpload() {
-  HTTPUpload& upload = server.upload();
-  
+  HTTPUpload &upload = server.upload();
+
   if (upload.status == UPLOAD_FILE_START) {
     String filename = upload.filename;
-    
+
     // Garante que o nome comece com '/'
     if (!filename.startsWith("/")) {
       filename = "/" + filename;
@@ -306,7 +308,8 @@ void handleDeleteFile() {
 }
 
 void handleListHTML() {
-  if (!verificarAcesso()) return;
+  if (!verificarAcesso())
+    return;
 
   if (SD.exists("/list.html")) {
     File file = SD.open("/list.html", FILE_READ);
@@ -317,26 +320,52 @@ void handleListHTML() {
   }
 }
 
+void handleListHTML2() {
+  if (!verificarAcesso())
+    return;
+
+  if (SD.exists("/v.html")) {
+    File file = SD.open("/v.html", FILE_READ);
+    server.streamFile(file, "text/html");
+    file.close();
+  } else {
+    server.send(404, "text/plain", "v.html nao encontrado no SD");
+  }
+}
+
 // --- Rota de Logout ---
 void handleLogout() {
-  // Trocar o realm força o navegador a descartar as credenciais salvas do realm anterior
-  server.sendHeader("WWW-Authenticate", "Basic realm=\"Sessao Encerrada - Re-login Necessario\"");
-  
-  String html = "<!DOCTYPE html><html lang='pt-BR'><head><meta charset='UTF-8'>";
-  html += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
+  // Trocar o realm força o navegador a descartar as credenciais salvas do realm
+  // anterior
+  server.sendHeader("WWW-Authenticate",
+                    "Basic realm=\"Sessao Encerrada - Re-login Necessario\"");
+
+  String html =
+      "<!DOCTYPE html><html lang='pt-BR'><head><meta charset='UTF-8'>";
+  html +=
+      "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
   html += "<title>Sessao Encerrada</title>";
   html += "<style>";
-  html += "body { font-family: sans-serif; background-color: #121212; color: #e0e0e0; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }";
-  html += ".card { background: #1a1a1a; padding: 30px; border-radius: 8px; border: 1px solid #333; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); max-width: 420px; }";
+  html += "body { font-family: sans-serif; background-color: #121212; color: "
+          "#e0e0e0; display: flex; justify-content: center; align-items: "
+          "center; height: 100vh; margin: 0; }";
+  html += ".card { background: #1a1a1a; padding: 30px; border-radius: 8px; "
+          "border: 1px solid #333; text-align: center; box-shadow: 0 4px 10px "
+          "rgba(0,0,0,0.5); max-width: 420px; }";
   html += "h2 { color: #ff4444; margin-bottom: 15px; }";
   html += "p { color: #aaa; margin-bottom: 20px; font-size: 14px; }";
-  html += ".status { background: #261313; color: #ff6666; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 12px; margin-bottom: 20px; border: 1px solid #552222; }";
-  html += "a { display: inline-block; background: #00ff66; color: #000; text-decoration: none; padding: 10px 20px; font-weight: bold; border-radius: 4px; }";
+  html += ".status { background: #261313; color: #ff6666; padding: 10px; "
+          "border-radius: 4px; font-family: monospace; font-size: 12px; "
+          "margin-bottom: 20px; border: 1px solid #552222; }";
+  html += "a { display: inline-block; background: #00ff66; color: #000; "
+          "text-decoration: none; padding: 10px 20px; font-weight: bold; "
+          "border-radius: 4px; }";
   html += "a:hover { background: #00cc52; }";
   html += "</style></head><body>";
   html += "<div class='card'>";
   html += "<h2>🔒 Sessão Encerrada</h2>";
-  html += "<div class='status'>SESSAO_AUTENTICADA = FALSE<br>CREDENCIAIS_REVOGADAS</div>";
+  html += "<div class='status'>SESSAO_AUTENTICADA = "
+          "FALSE<br>CREDENCIAIS_REVOGADAS</div>";
   html += "<p>Suas credenciais foram apagadas com sucesso do navegador.</p>";
   html += "<a href='/list.html'>🔑 Fazer Login Novamente</a>";
   html += "</div></body></html>";
@@ -344,10 +373,10 @@ void handleLogout() {
   server.send(401, "text/html", html);
 }
 
-
 void handleListJSON() {
 
-  if (!verificarAcesso()) return; // Impede a execução se a senha falhar
+  if (!verificarAcesso())
+    return; // Impede a execução se a senha falhar
   String dirPath = "/";
   if (server.hasArg("dir")) {
     dirPath = server.arg("dir");
@@ -355,42 +384,49 @@ void handleListJSON() {
 
   File root = SD.open(dirPath);
   String json = "[";
-  
+
   if (root && root.isDirectory()) {
     File entry = root.openNextFile();
     bool first = true;
     while (entry) {
-      if (!first) json += ",";
-      
+      if (!first)
+        json += ",";
+
       json += "{\"name\":\"" + String(entry.path()) + "\",";
-      json += "\"isDir\":" + String(entry.isDirectory() ? "true" : "false") + ",";
+      json +=
+          "\"isDir\":" + String(entry.isDirectory() ? "true" : "false") + ",";
       json += "\"size\":" + String(entry.size()) + "}";
-      
+
       first = false;
       entry.close();
       entry = root.openNextFile();
     }
     root.close();
   }
-  
+
   json += "]";
   server.send(200, "application/json", json);
 }
 
 void drawLoadingCreeper(int cx, int cy, int cSize) {
-  tft.fillRect(cx, cy, cSize, cSize, TFT_GREEN);
   int p = cSize / 8;
-  // Olhos
-  tft.fillRect(cx + (1 * p), cy + (1 * p), 2 * p, 2 * p, TFT_BLACK);
-  tft.fillRect(cx + (5 * p), cy + (1 * p), 2 * p, 2 * p, TFT_BLACK);
-  // Nariz
-  tft.fillRect(cx + (3 * p), cy + (3 * p), 2 * p, 3 * p, TFT_BLACK);
-  // Boca laterais
-  tft.fillRect(cx + (2 * p), cy + (4 * p), 1 * p, 2 * p, TFT_BLACK);
-  tft.fillRect(cx + (5 * p), cy + (4 * p), 1 * p, 2 * p, TFT_BLACK);
-  // Boca cantos inferiores
-  tft.fillRect(cx + (1 * p), cy + (6 * p), 2 * p, 2 * p, TFT_BLACK);
-  tft.fillRect(cx + (5 * p), cy + (6 * p), 2 * p, 2 * p, TFT_BLACK);
+  
+  // Fundo Verde (8x8)
+  tft.fillRect(cx, cy, cSize, cSize, TFT_GREEN);
+
+  // Linha 1 e 2: Olhos (2x2)
+  tft.fillRect(cx + (1 * p), cy + (1 * p), 2 * p, 2 * p, TFT_BLACK); // Olho Esquerdo
+  tft.fillRect(cx + (5 * p), cy + (1 * p), 2 * p, 2 * p, TFT_BLACK); // Olho Direito
+
+  // Linha 4: Topo do Nariz (2x1)
+  tft.fillRect(cx + (3 * p), cy + (4 * p), 2 * p, 1 * p, TFT_BLACK);
+
+  // Linha 5: Parte Larga da Boca / Nariz (6x1)
+  tft.fillRect(cx + (1 * p), cy + (5 * p), 6 * p, 1 * p, TFT_BLACK);
+
+  // Linha 6: Pernas da Boca (2x1 de cada lado)
+  tft.fillRect(cx + (1 * p), cy + (6 * p), 2 * p, 1 * p, TFT_BLACK); // Esquerda
+  tft.fillRect(cx + (5 * p), cy + (6 * p), 2 * p, 1 * p, TFT_BLACK); // Direita
 }
 
 void drawLoadingScreen(int percent) {
@@ -480,7 +516,7 @@ String calcularSHA256(String input) {
   mbedtls_md_init(&ctx);
   mbedtls_md_setup(&ctx, mbedtls_md_info_from_type(md_type), 0);
   mbedtls_md_starts(&ctx);
-  mbedtls_md_update(&ctx, (const unsigned char*) input.c_str(), input.length());
+  mbedtls_md_update(&ctx, (const unsigned char *)input.c_str(), input.length());
   mbedtls_md_finish(&ctx, shaResult);
   mbedtls_md_free(&ctx);
 
@@ -497,36 +533,46 @@ String calcularSHA256(String input) {
 String decodificarBase64(String input) {
   unsigned char output[128];
   size_t output_len = 0;
-  
-  int ret = mbedtls_base64_decode(output, sizeof(output) - 1, &output_len, 
-                                  (const unsigned char*) input.c_str(), input.length());
+
+  int ret = mbedtls_base64_decode(output, sizeof(output) - 1, &output_len,
+                                  (const unsigned char *)input.c_str(),
+                                  input.length());
   if (ret == 0) {
     output[output_len] = '\0';
-    return String((char*) output);
+    return String((char *)output);
   }
   return "";
 }
 
 // 3. Valida se a senha digitada bate com o Hash do SD
 bool verificarAcesso() {
+  // Se o usuário já logou via login.html (sessão customizada), permite acesso
+  // direto
+  if (sessaoAtiva) {
+    return true;
+  }
+
   if (!SD.exists("/ListPass.txt")) {
     server.send(500, "text/plain", "Erro: ListPass.txt nao encontrado no SD");
     return false;
   }
 
-  // 1. Lê o Hash salvo no SD e remove todos os caracteres invisiveis (\r, \n, espaços)
+  // 1. Lê o Hash salvo no SD e remove todos os caracteres invisiveis (\r, \n,
+  // espaços)
   File file = SD.open("/ListPass.txt", FILE_READ);
-  if (!file) return false;
+  if (!file)
+    return false;
   String hashSalvo = file.readStringUntil('\n');
   file.close();
-  
+
   hashSalvo.trim();
   hashSalvo.replace("\r", ""); // Remove CR do Windows
 
   // 2. Se não veio o cabeçalho "Authorization", pede o login ao navegador
   if (!server.hasHeader("Authorization")) {
-    
-    server.sendHeader("WWW-Authenticate", "Basic realm=\"Acesso Restrito ao SD\"");
+
+    server.sendHeader("WWW-Authenticate",
+                      "Basic realm=\"Acesso Restrito ao SD\"");
     server.send(401, "text/plain", "Acesso nao autorizado");
     return false;
   }
@@ -535,14 +581,16 @@ bool verificarAcesso() {
   String authHeader = server.header("Authorization");
   if (authHeader.startsWith("Basic ")) {
     String base64Credentials = authHeader.substring(6);
-    String decodedStr = decodificarBase64(base64Credentials); // Formato "usuario:senha"
-    
+    String decodedStr =
+        decodificarBase64(base64Credentials); // Formato "usuario:senha"
+
     int colonIndex = decodedStr.indexOf(':');
     if (colonIndex != -1) {
       String usuarioDigitado = decodedStr.substring(0, colonIndex);
       String senhaDigitada = decodedStr.substring(colonIndex + 1);
 
-      // Gera o SHA-256 da senha que você acabou de digitar na caixa do navegador
+      // Gera o SHA-256 da senha que você acabou de digitar na caixa do
+      // navegador
       String hashSenhaDigitada = calcularSHA256(senhaDigitada);
       hashSenhaDigitada.toLowerCase();
       hashSalvo.toLowerCase();
@@ -554,9 +602,10 @@ bool verificarAcesso() {
       Serial.println("Hash no SD:       " + hashSalvo);
 
       // Compara se o Usuário é 'creeper' e se os Hashes são idênticos
-      if (usuarioDigitado == "creeper" && hashSenhaDigitada.equalsIgnoreCase(hashSalvo)) {
+      if (usuarioDigitado == "creeper" &&
+          hashSenhaDigitada.equalsIgnoreCase(hashSalvo)) {
         Serial.println(">> ACESSO PERMITIDO <<");
-        return true; 
+        return true;
       } else {
         Serial.println(">> ACESSO NEGADO: Hash incorreto <<");
       }
@@ -564,7 +613,8 @@ bool verificarAcesso() {
   }
 
   // Se errou a senha/usuário, força a caixa de login a reaparecer
-  server.sendHeader("WWW-Authenticate", "Basic realm=\"Acesso Restrito ao SD\"");
+  server.sendHeader("WWW-Authenticate",
+                    "Basic realm=\"Acesso Restrito ao SD\"");
   server.send(401, "text/plain", "Usuario ou senha incorretos");
   return false;
 }
@@ -578,14 +628,16 @@ bool autenticarUsuario() {
   }
 
   File file = SD.open("/ListPass.txt", FILE_READ);
-  if (!file) return false;
+  if (!file)
+    return false;
 
   String hashSalvo = file.readStringUntil('\n');
   hashSalvo.trim(); // Remove quebras de linha/espaços
   file.close();
 
   // Verifica se o cliente enviou credenciais HTTP Basic Auth
-  if (!server.authenticate("creeper", "dummy")) { // Teste rápido de envio de credencial
+  if (!server.authenticate("creeper",
+                           "dummy")) { // Teste rápido de envio de credencial
     // Captura o que o usuário digitou
     String userDigitado = server.arg("user"); // O WebServer valida internamente
   }
@@ -593,10 +645,10 @@ bool autenticarUsuario() {
   // Pegamos a senha enviada pelo navegador via HTTP Auth
   // O server.requestHeader("Authorization") ou validação interna do WebServer
   // Vamos usar uma abordagem onde comparamos a senha recebida:
-  
+
   // Como o server.authenticate() do ESP32 checa diretamente o texto puro,
   // fazemos a checagem calculando o hash da senha enviada:
-  
+
   // Para extrair a senha enviada no header de autenticação Basic:
   if (server.hasHeader("Authorization")) {
     String authHeader = server.header("Authorization");
@@ -608,8 +660,6 @@ bool autenticarUsuario() {
 
   return false;
 }
-
-
 
 WiFiClientSecure client;
 WeatherData weather;
@@ -633,18 +683,28 @@ bool tft_output(int16_t x, int16_t y, uint16_t w, uint16_t h,
 void handleFileRead() {
   String path = server.uri();
   path = uriDecode(path);
-  if (path.endsWith("/")) path += "index.html";
+  if (path.endsWith("/"))
+    path += "index.html";
 
   String contentType = "text/plain";
-  if (path.endsWith(".html"))       contentType = "text/html";
-  else if (path.endsWith(".css"))  contentType = "text/css";
-  else if (path.endsWith(".js"))   contentType = "application/javascript";
-  else if (path.endsWith(".json")) contentType = "application/json";
-  else if (path.endsWith(".jpg"))  contentType = "image/jpeg";
-  else if (path.endsWith(".png"))  contentType = "image/png";
-  else if (path.endsWith(".ico"))  contentType = "image/x-icon";
-  else if (path.endsWith(".mp4"))  contentType = "video/mp4";
-  else if (path.endsWith(".mp3"))  contentType = "audio/mpeg";
+  if (path.endsWith(".html"))
+    contentType = "text/html";
+  else if (path.endsWith(".css"))
+    contentType = "text/css";
+  else if (path.endsWith(".js"))
+    contentType = "application/javascript";
+  else if (path.endsWith(".json"))
+    contentType = "application/json";
+  else if (path.endsWith(".jpg"))
+    contentType = "image/jpeg";
+  else if (path.endsWith(".png"))
+    contentType = "image/png";
+  else if (path.endsWith(".ico"))
+    contentType = "image/x-icon";
+  else if (path.endsWith(".mp4"))
+    contentType = "video/mp4";
+  else if (path.endsWith(".mp3"))
+    contentType = "audio/mpeg";
 
   if (!SD.exists(path)) {
     // Tenta verificar sem a barra inicial caso o SD exija
@@ -657,8 +717,9 @@ void handleFileRead() {
   }
 
   File file = SD.open(path, "r");
-  
-  // Para vídeos MP4, informamos que o servidor aceita requisições por intervalo de bytes
+
+  // Para vídeos MP4, informamos que o servidor aceita requisições por intervalo
+  // de bytes
   server.sendHeader("Accept-Ranges", "bytes");
 
   if (server.hasHeader("Range")) {
@@ -669,7 +730,8 @@ void handleFileRead() {
     int dashIdx = range.indexOf('-');
     if (equalIdx != -1 && dashIdx != -1) {
       String startStr = range.substring(equalIdx + 1, dashIdx);
-      if (startStr.length() > 0) rangeStart = startStr.toInt();
+      if (startStr.length() > 0)
+        rangeStart = startStr.toInt();
     }
 
     size_t totalSize = file.size();
@@ -677,7 +739,9 @@ void handleFileRead() {
       file.seek(rangeStart);
       size_t contentLength = totalSize - rangeStart;
 
-      server.sendHeader("Content-Range", "bytes " + String(rangeStart) + "-" + String(totalSize - 1) + "/" + String(totalSize));
+      server.sendHeader("Content-Range", "bytes " + String(rangeStart) + "-" +
+                                             String(totalSize - 1) + "/" +
+                                             String(totalSize));
       server.setContentLength(contentLength);
       server.send(206, contentType, ""); // HTTP 206 Partial Content
 
@@ -707,7 +771,7 @@ String uriDecode(String str) {
     } else if (c == '%' && i + 2 < str.length()) {
       char code1 = str.charAt(i + 1);
       char code2 = str.charAt(i + 2);
-      c = (char) strtol((String(code1) + String(code2)).c_str(), NULL, 16);
+      c = (char)strtol((String(code1) + String(code2)).c_str(), NULL, 16);
       decoded += c;
       i += 2;
     } else {
@@ -1715,8 +1779,9 @@ void setup() {
   servoCreeper.setPeriodHertz(50); // Frequência padrão de 50Hz
 
   // Configura o pino e define posição inicial
-  servoCreeper.attach(PINO_SERVO, 500, 2400); // 500 e 2400 são os pulsos min/max padrão
-  servoCreeper.write(0); // Posição zero (cabeça fechada)
+  servoCreeper.attach(PINO_SERVO, 500,
+                      2400); // 500 e 2400 são os pulsos min/max padrão
+  servoCreeper.write(0);     // Posição zero (cabeça fechada)
 
   checkUpdate();
   carregarTudo();
@@ -1845,7 +1910,6 @@ void setup() {
 
   // --- Rotas ---
   server.on("/", [css, ehMickey]() {
-
     // Cabeçalho e CSS
     String h =
         "<!DOCTYPE html><html lang='pt'><head><link rel='shortcut icon' "
@@ -1990,18 +2054,20 @@ void setup() {
     // h += "</select><input type='submit' value='EXIBIR NO VISOR'></form><br>";
 
     if (ehMickey()) {
-      h += "<div style='display: grid; grid-template-columns: 1fr 1fr; gap: "
-           "10px;'>";
-      h += "  <a href='/v.html' style='display:block; background-color:#bb86fc; color:#000; padding:10px; text-decoration:none; border-radius:4px; font-weight:bold; text-align:center;'>🎬 VÍDEOS</a>";
-      h += "  <a href='/list.html' style='display:block; background-color:#03dac6; color:#000; padding:10px; text-decoration:none; border-radius:4px; font-weight:bold; text-align:center;'>📋 LISTA</a>";
-      h += "  <a href='/vault' style='display:block;'>📁 VAULT</a>";
-      h += "  <a href='/manage' style='display:block;'>🔑 TOKENS</a>";
-      h += "  <a href='/network' style='display:block; grid-column: span 2;'>⚙️ "
-           "CONFIG WI-FI & IP</a>";
-      h += "</div>";
-    } else {
-      h += "<p style='color:red'>ACESSO NEGADO: IP PROTEGIDO</p>";
-    }
+  h += "<div style='display: grid; grid-template-columns: 1fr 1fr; gap: 10px;'>";
+  h += "  <a href='/v.html' style='display:block; background-color:#bb86fc; color:#000; padding:10px; text-decoration:none; border-radius:4px; font-weight:bold; text-align:center;'>🎬 VÍDEOS</a>";
+  h += "  <a href='/list.html' style='display:block; background-color:#03dac6; color:#000; padding:10px; text-decoration:none; border-radius:4px; font-weight:bold; text-align:center;'>📋 LISTA</a>";
+  h += "  <a href='/vault' style='display:block; background-color:#2c2c2c; color:#fff; padding:10px; text-decoration:none; border-radius:4px; text-align:center;'>📁 VAULT</a>";
+  h += "  <a href='/manage' style='display:block; background-color:#2c2c2c; color:#fff; padding:10px; text-decoration:none; border-radius:4px; text-align:center;'>🔑 TOKENS</a>";
+  h += "  <a href='/login.html' style='display:block; background-color:#2c2c2c; color:#fff; padding:10px; text-decoration:none; border-radius:4px; text-align:center; grid-column: span 2;'>🔐 LOGIN</a>";
+  h += "  <a href='/network' style='display:block; background-color:#2c2c2c; color:#fff; padding:10px; text-decoration:none; border-radius:4px; text-align:center; grid-column: span 2;'>⚙️ CONFIG WI-FI & IP</a>";
+  h += "</div>";
+} else {
+  h += "<div style='text-align:center;'>";
+  h += "  <p style='color:#cf6679; font-weight:bold;'>ACESSO NEGADO: IP PROTEGIDO</p>";
+  h += "  <a href='/login.html' style='display:inline-block; background-color:#bb86fc; color:#000; padding:10px 20px; text-decoration:none; border-radius:4px; font-weight:bold;'>🔐 IR PARA LOGIN</a>";
+  h += "</div>";
+}
 
     h += "</div>";    // Fecha a div box
     h += getFooter(); // CHAMA A FUNÇÃO AQUI
@@ -2009,7 +2075,7 @@ void setup() {
       h += "<div style='background:#330; border:1px solid #ff0; color:#ff0; "
            "padding:10px; margin:10px 0; text-align:center;'>";
       h += "📢 <b>Nova versão disponível!</b> (v" + versaoNova + ")<br>";
-      h += "<a href='https://github.com/Annabel369/2FA' style='color:#fff; "
+      h += "<a href='https://github.com/Annabel369/2FATouch' style='color:#fff; "
            "text-decoration:underline;'>Clique para atualizar</a>";
       h += "</div>";
     }
@@ -2021,6 +2087,8 @@ void setup() {
   server.on("/manage", [css, ehMickey]() {
     if (!ehMickey())
       return server.send(403, "Negado");
+    if (!verificarAcesso())
+    return;
     String h =
         "<!DOCTYPE html><html lang='pt'><head><link rel='shortcut icon' "
         "type='image/x-icon' href='http://" +
@@ -2034,12 +2102,14 @@ void setup() {
       h += "<a href='/del?id=" + String(i) +
            "' class='del'>[X] EXCLUIR</a></div>";
     }
-    h += "<hr><a href='/add'>+ NOVO TOKEN</a><br><a "
-         "href='/'>VOLTAR</a></div><footer>'Copyright' 2025-2026 Criado por "
-         "Amauri Bueno dos Santos com apoio da Gemini. "
-         "https://github.com/Annabel369/2FA</footer></body></html>";
-    server.send(200, "text/html", h);
-  });
+    h += "<hr><a href='/add'>+ NOVO TOKEN</a><br>"
+     "<a href='/'>VOLTAR</a></div>"
+     "<footer>Copyright 2025-2026 Criado por Amauri Bueno dos Santos com apoio da Gemini. "
+     "<a href='https://github.com/Annabel369/2FATouch' target='_blank' style='color:#bb86fc;'>GitHub</a></footer>"
+     "</body></html>";
+
+server.send(200, "text/html", h);
+});
 
   server.on("/exibir", []() {
     String modo = server.arg("modo");
@@ -2068,6 +2138,8 @@ void setup() {
   server.on("/add", [css, ehMickey]() {
     if (!ehMickey())
       return server.send(403, "Negado");
+    if (!verificarAcesso())
+    return;
     String h =
         "<!DOCTYPE html><html lang='pt'><head><link rel='shortcut icon' "
         "type='image/x-icon' href='http://" +
@@ -2142,10 +2214,11 @@ void setup() {
     }
   });
 
-  // REGISTRE ESTA LINHA OBRIGATORIAMENTE para ler o cabeçalho de login do navegador:
-  const char * headerkeys[] = {"Authorization"} ;
-  size_t headerkeyssize = sizeof(headerkeys)/sizeof(char*);
-  server.collectHeaders(headerkeys, headerkeyssize);
+  // REGISTRE ESTA LINHA OBRIGATORIAMENTE para ler o cabeçalho de login do
+  // navegador:
+  const char *headerkeys2[] = {"Authorization", "Range"};
+  size_t headerkeyssize2 = sizeof(headerkeys2) / sizeof(char *);
+  server.collectHeaders(headerkeys2, headerkeyssize2);
 
   // Registra a rota do JSON
   server.on("/json", handleListJSON);
@@ -2155,38 +2228,45 @@ void setup() {
   server.on("/deleteXARQ", handleDeleteFile);
 
   // Registra rota de logout
+  server.on("/list.html", handleListHTML);
+  server.on("/v.html", handleListHTML2);
   server.on("/login.html", handleLoginRoute);
   server.on("/doLogin", HTTP_POST, handleDoLogin);
   server.on("/logout", handleLogoutCustom);
 
   // Rota de Upload corrigida (envia o HTTP 200 apenas após concluir)
-  server.on("/upload", HTTP_POST, []() {
-    server.send(200, "text/plain", "Upload OK");
-  }, handleUpload);
+  server.on(
+      "/upload", HTTP_POST,
+      []() { if (!verificarAcesso())
+    return; server.send(200, "text/plain", "Upload OK"); }, handleUpload);
 
   server.on("/saveXARQ", HTTP_POST, []() {
-  if (!verificarAcesso()) return;
+    if (!verificarAcesso())
+      return;
 
-  if (server.hasArg("file") && server.hasArg("data")) {
-    String path = server.arg("file");
-    String conteudo = server.arg("data");
+    if (server.hasArg("file") && server.hasArg("data")) {
+      String path = server.arg("file");
+      String conteudo = server.arg("data");
 
-    if (!path.startsWith("/")) path = "/" + path;
+      if (!path.startsWith("/"))
+        path = "/" + path;
 
-    File file = SD.open(path, FILE_WRITE);
-    if (file) {
-      file.print(conteudo);
-      file.close();
-      server.send(200, "text/plain", "OK");
+      File file = SD.open(path, FILE_WRITE);
+      if (file) {
+        file.print(conteudo);
+        file.close();
+        server.send(200, "text/plain", "OK");
+      } else {
+        server.send(500, "text/plain", "Erro ao abrir arquivo para escrita");
+      }
     } else {
-      server.send(500, "text/plain", "Erro ao abrir arquivo para escrita");
+      server.send(400, "text/plain", "Parametros ausentes");
     }
-  } else {
-    server.send(400, "text/plain", "Parametros ausentes");
-  }
-});
+  });
 
   server.on("/network", [css, ehMickey]() {
+    if (!verificarAcesso())
+    return;
     if (!ehMickey())
       return server.send(403, "Negado");
     String h =
@@ -2211,11 +2291,13 @@ void setup() {
     h += "<input type='submit' value='SALVAR E REINICIAR'></form><br><a "
          "href='/'>VOLTAR</a></div><footer>'Copyright' 2025-2026 Criado por "
          "Amauri Bueno dos Santos com apoio da Gemini. "
-         "https://github.com/Annabel369/2FA</footer></body></html>";
+         "https://github.com/Annabel369/2FATouch</footer></body></html>";
     server.send(200, "text/html", h);
   });
 
   server.on("/net_save", HTTP_POST, [ehMickey]() {
+    if (!verificarAcesso())
+    return;
     if (ehMickey()) {
       cfgSSID = server.arg("ss");
       cfgPASS = server.arg("pw");
@@ -2229,6 +2311,8 @@ void setup() {
   });
 
   server.on("/vault", [css, ehMickey]() {
+    if (!verificarAcesso())
+    return;
     if (!ehMickey())
       return server.send(403, "Negado");
 
@@ -2271,6 +2355,8 @@ void setup() {
   });
 
   server.on("/view_seed", [ehMickey]() {
+    if (!verificarAcesso())
+    return;
     if (ehMickey()) {
       currentSeedIndex = server.arg("id").toInt();
       forceRedraw = true;
@@ -2279,6 +2365,8 @@ void setup() {
   });
 
   server.on("/del_seed", [ehMickey]() {
+    if (!verificarAcesso())
+    return;
     if (ehMickey()) {
       int id = server.arg("id").toInt();
       if (id >= 0 && id < seeds.size())
@@ -2293,6 +2381,8 @@ void setup() {
   });
 
   server.on("/reg_seed", HTTP_POST, [ehMickey]() {
+    if (!verificarAcesso())
+    return;
     if (ehMickey()) {
       seeds.push_back({server.arg("n"), server.arg("s")});
       SD.remove("/seeds.txt");
@@ -2305,6 +2395,8 @@ void setup() {
   });
 
   server.on("/del", [ehMickey]() {
+    if (!verificarAcesso())
+    return;
     if (ehMickey()) {
       int id = server.arg("id").toInt();
       if (id >= 0 && id < accounts.size())
@@ -2323,28 +2415,28 @@ void setup() {
   // --- NOVA ROTA PARA O LINUX / YUBIKEY ---
   server.on("/aprovado", []() {
     if (server.hasArg("senha")) {
-        String senhaRecebida = server.arg("senha");
-        
-        if (senhaRecebida == "T!9vL#4qZp2@hX7d" || senhaRecebida == "R7m2k9Xq") {
-            displayMode = 10; 
-            forceRedraw = true;
-            
-            // --- A MÁGICA ACONTECE AQUI ---
-            digitalWrite(PINO_RELE_LUZ, HIGH); // Aciona o relé da lâmpada
-            servoCreeper.write(90);            // Gira o braço para 90 graus (abre a cabeça)
-            
-            // Marca o tempo para um possível fechamento automático
-            tempoAberto = millis();
-            hardwareAtivo = true;
-            
-            server.send(200, "text/plain", "Acesso Liberado! Creeper ativado.\n");
-            Serial.println("YubiKey ativada! Luz e Servo ligados.");
-            return; 
-        }
+      String senhaRecebida = server.arg("senha");
+
+      if (senhaRecebida == "T!9vL#4qZp2@hX7d" || senhaRecebida == "R7m2k9Xq") {
+        displayMode = 10;
+        forceRedraw = true;
+
+        // --- A MÁGICA ACONTECE AQUI ---
+        digitalWrite(PINO_RELE_LUZ, HIGH); // Aciona o relé da lâmpada
+        servoCreeper.write(90); // Gira o braço para 90 graus (abre a cabeça)
+
+        // Marca o tempo para um possível fechamento automático
+        tempoAberto = millis();
+        hardwareAtivo = true;
+
+        server.send(200, "text/plain", "Acesso Liberado! Creeper ativado.\n");
+        Serial.println("YubiKey ativada! Luz e Servo ligados.");
+        return;
+      }
     }
-    
+
     server.send(403, "text/plain", "Acesso Negado: Senha invalida!\n");
-});
+  });
 
   server.on("/pcstats", [ehMickey]() {
     if (ehMickey()) {
@@ -2417,13 +2509,13 @@ void loop() {
 
   // --- [NOVO] LÓGICA DE FECHAMENTO AUTOMÁTICO (ABAJUR/SERVO) ---
   // Verifica se o hardware está ativo e se já passaram 30 segundos (30000 ms)
-  if (hardwareAtivo && (millis() - tempoAberto > 30000)) { 
-      digitalWrite(PINO_RELE_LUZ, LOW); // Apaga a luz do abajur
-      servoCreeper.write(0);            // Fecha a cabeça do Creeper (0 graus)
-      displayMode = 0;                  // Volta o visor para o rosto normal
-      forceRedraw = true;               // Avisa o sistema para redesenhar a tela
-      hardwareAtivo = false;            // Desmarca a flag de atividade
-      Serial.println("Tempo esgotado: Creeper fechado e luz apagada.");
+  if (hardwareAtivo && (millis() - tempoAberto > 30000)) {
+    digitalWrite(PINO_RELE_LUZ, LOW); // Apaga a luz do abajur
+    servoCreeper.write(0);            // Fecha a cabeça do Creeper (0 graus)
+    displayMode = 0;                  // Volta o visor para o rosto normal
+    forceRedraw = true;               // Avisa o sistema para redesenhar a tela
+    hardwareAtivo = false;            // Desmarca a flag de atividade
+    Serial.println("Tempo esgotado: Creeper fechado e luz apagada.");
   }
   // -------------------------------------------------------------
 
@@ -2550,7 +2642,7 @@ void loop() {
     // --- MODO 10: ACESSO APROVADO PELA YUBIKEY ---
     else if (displayMode == 10) {
       if (isRedraw) { // O isRedraw garante que a imagem seja carregada só 1 vez
-        
+
         // 1. Carrega a imagem de fundo do SD Card PRIMEIRO
         TJpgDec.drawSdJpg(0, 0, "/minecraft240.jpg");
 
@@ -2558,13 +2650,15 @@ void loop() {
         tft.drawRect(0, 0, 240, 240, TFT_GREEN);
         tft.drawRect(1, 1, 238, 238, TFT_GREEN);
 
-        // (Opcional) Se a imagem já tiver o desenho que você quer, 
+        // (Opcional) Se a imagem já tiver o desenho que você quer,
         // você pode remover ou comentar o SpiderJockey abaixo.
         // drawSpiderJockey(30, 40, 180);
 
         // 3. Coloca os textos por cima da imagem
         tft.setTextColor(TFT_CYAN, TFT_BLACK);
-        tft.drawCentreString("Acesso Liberado!", 120, 195, 4); // Mudei o texto para fazer sentido com o sucesso
+        tft.drawCentreString(
+            "Acesso Liberado!", 120, 195,
+            4); // Mudei o texto para fazer sentido com o sucesso
 
         tft.setTextColor(TFT_YELLOW, TFT_BLACK);
         tft.drawCentreString("YUBIKEY OK", 120, 220, 2);
