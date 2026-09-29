@@ -1,0 +1,5 @@
+{
+  "artifactType": "ARTIFACT_TYPE_WALKTHROUGH",
+  "summary": "Manual completo e detalhado do código 2FATouch.ino (Creeper Auth v7.2.2), abrangendo hardware, pinagem, arquivos no SD, rotas HTTP/API, modos de tela, lógica TOTP, integração com hardware (servo, relé, touch) e segurança.",
+  "updatedAt": "2026-09-29T21:30:52.818268262Z"
+}
