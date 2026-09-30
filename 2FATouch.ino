@@ -3,8 +3,8 @@
 // =====
 #include "mbedtls/md.h"
 #include "qrcode.h"
-#include <ArduinoJson.h> // Você precisará instalar a biblioteca ArduinoJson
-#include <ESP32FtpServer.h>
+#include <ArduinoJson.h> 
+#include <ESP32FtpServer.h> // Você precisará instalar a biblioteca ESP32FtpServer ela vem com tudo
 #include <ESPmDNS.h>
 #include <FS.h>
 #include <HTTPClient.h>
@@ -873,10 +873,9 @@ void telaAnterior() {
     iniciarScanWiFiTFT();
   forceRedraw = true;
 }
-String versaoAtual = "7.2";
-String urlVersaoGitHub =
-    "https://raw.githubusercontent.com/Annabel369/2FA/main/version.txt";
-String versaoNova = ""; // Vai guardar a versão que o GitHub responder
+String versaoAtual = "2.2";
+String urlVersaoGitHub = "https://raw.githubusercontent.com/Annabel369/2FATouch/main/version.json";
+String versaoNova = "";
 bool updateDisponivel = false;
 // Função auxiliar para calcular SHA-256 de uma String
 String calcularSHA256(String input) {
@@ -1111,35 +1110,72 @@ String uriDecode(String str) {
   }
   return decoded;
 }
+
 void checkUpdate() {
   if (WiFi.status() == WL_CONNECTED) {
     WiFiClientSecure client;
-    client.setInsecure(); // Necessário para pular a checagem de certificado SSL
+    client.setInsecure(); // Pula verificação do certificado SSL
+
     HTTPClient http;
-    http.setFollowRedirects(
-        HTTPC_STRICT_FOLLOW_REDIRECTS); // Importante para o GitHub
-    Serial.println("[Update] Conectando ao GitHub Raw...");
+    http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
+    http.setTimeout(5000);
+
+    Serial.println("[Update] Conectando ao GitHub para ler JSON...");
+
     if (http.begin(client, urlVersaoGitHub)) {
+      http.addHeader("User-Agent", "ESP32-2FATouch");
+
       int httpCode = http.GET();
-      if (httpCode == 200) {
-        versaoNova = http.getString();
-        versaoNova.trim(); // Remove espaços e pulos de linha
-        Serial.print("[Update] Versao no GitHub: ");
-        Serial.println(versaoNova);
-        Serial.print("[Update] Versao no ESP32: ");
-        Serial.println(versaoAtual);
-        // Se a versão do GitHub for diferente da versão atual do código
-        if (versaoNova != "" && versaoNova != versaoAtual) {
-          updateDisponivel = true;
-          Serial.println("!!! AVISO: Versao nova encontrada !!!");
+
+      if (httpCode == HTTP_CODE_OK) { // HTTP 200
+        String payload = http.getString();
+        
+        // Aloca o documento JSON (ArduinoJson v6/v7)
+        JsonDocument doc; // Se usar ArduinoJson v6, use StaticJsonDocument<512> doc;
+        DeserializationError error = deserializeJson(doc, payload);
+
+        if (!error) {
+          // Extrai o valor do campo "version"
+          const char* versaoJson = doc["version"];
+          versaoNova = String(versaoJson);
+
+          Serial.print("[Update] Versao no GitHub: ");
+          Serial.println(versaoNova);
+          Serial.print("[Update] Versao no ESP32: ");
+          Serial.println(versaoAtual);
+
+          if (versaoNova.length() > 0 && versaoNova != versaoAtual) {
+            updateDisponivel = true;
+            Serial.println("!!! AVISO: Nova versao disponivel !!!");
+            
+            // Você também pode ler o changelog se quiser exibir na tela
+            if (doc.containsKey("changelog")) {
+              const char* changelog = doc["changelog"];
+              Serial.print("[Update] Novidades: ");
+              Serial.println(changelog);
+            }
+          } else {
+            Serial.println("[Update] O sistema ja esta na versao mais recente.");
+          }
+        } else {
+          Serial.print("[Update] Erro ao processar o JSON: ");
+          Serial.println(error.f_str());
         }
+
       } else {
-        Serial.printf("[Update] Erro HTTP: %d\n", httpCode);
+        Serial.printf("[Update] Erro HTTP (%d): %s\n", 
+                      httpCode, http.errorToString(httpCode).c_str());
       }
+
       http.end();
+    } else {
+      Serial.println("[Update] Falha ao iniciar conexao HTTPClient.");
     }
+  } else {
+    Serial.println("[Update] Erro: WiFi nao conectado!");
   }
 }
+
 void drawPCPerformance() {
   tft.fillScreen(TFT_BLACK);
   // Estilo Matrix/Creeper
@@ -1605,7 +1641,7 @@ void drawWiFiScreen() {
   tft.drawCentreString("SENHA: " + cfgPASS, tft.width() / 2, 280, 2);
   if (!updateDisponivel) {
     tft.setTextColor(TFT_RED, TFT_BLACK);
-    tft.drawCentreString("UPDATE DISPONIVEL: v" + versaoNova, 120, 290, 2);
+    tft.drawCentreString("UPDATE DISPONIVEL: v" + versaoNova, 120, 297, 2);
   }
 }
 void drawPixScreen() {
@@ -1964,7 +2000,7 @@ void setup() {
   SPI.begin(18, 19, 23, SD_CS);
   tft.init();
   tft.setRotation(0);
-  tft.invertDisplay(false); // Inverte as cores da tela conforme solicitado
+  tft.invertDisplay(true); // Inverte as cores da tela conforme solicitado
   tft.fillScreen(TFT_BLACK);
   // INICIA O TOUCH (DEPOIS DO TFT)
   touchscreenSPI.begin(XPT2046_CLK, XPT2046_MISO, XPT2046_MOSI, XPT2046_CS);
