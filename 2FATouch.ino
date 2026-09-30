@@ -23,8 +23,7 @@
 #include <ESP32Servo.h>
 #include <XPT2046_Touchscreen.h>
 Servo servoCreeper;
-const int PINO_RELE_LUZ =
-    22; // Alterado de 26 para 22 (livre no conector traseiro)
+const int PINO_RELE_LUZ = 22; // Alterado de 26 para 22 (livre no conector traseiro)
 const int PINO_SERVO = 27; // Mantido no 27 (livre no conector traseiro)
 unsigned long tempoAberto = 0;
 bool hardwareAtivo = false;
