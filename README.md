@@ -126,13 +126,18 @@ Módulo Cartão Micro SD (SPI).
 Cartão Micro SD (Formatado em FAT32).
 
 # 📚 Bibliotecas do Arduino (IDE)
-TFT_eSPI: (Configurar User_Setup.h para os pinos do seu display).
 
-NTPClient e WiFiUdp.
 
-ESP32FtpServer: Para acesso remoto aos arquivos.
+ESP32FtpServer: Para acesso remoto aos arquivos. ele vem com todas Elas Juntas
 
-mbedtls: (Nativa do ESP32).
+    ArduinoJson
+    ESP32FtpServer
+    ESP32Servo
+    NTPClient
+    SD
+    TFT_eSPI
+    TJpg_Decoder
+    XPT2046_Touchscreen
 
 # ⚙️ Configuração Inicial
 Insira o cartão SD no PC e crie um arquivo config.txt:
