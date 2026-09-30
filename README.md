@@ -144,6 +144,7 @@ Regulagem customizado usando o nanu que eu desenvolvi e um editor de texto!
 
 <img width="1017" height="511" alt="image" src="https://github.com/user-attachments/assets/111e1644-220c-43ba-b1aa-5229c66f0e0f" />
 faz como na foto linha 27 coloca comentário // e na linha 28 coloca:
+
      #include "../ESP32FtpServer/src/User_Setup_Custom.h"
 
 
