@@ -52,8 +52,8 @@ int pcGPU = 0;
 int pcTemp = 0;
 // ------------------------------------------------
 // Configurações e Whitelist
-String cfgSSID = "Maria Cristina 4G2";
-String cfgPASS = "1247bfam12";
+String cfgSSID = "Maria Cristina 4G";
+String cfgPASS = "1247bfam";
 String cfgMODO = "REDE";
 String cfgIP = "192.168.100.";
 String cfgPIX = "810924f7-69b3-4116-8d8f-692e4a25c251"; // Pode ser CPF, E-mail
@@ -447,12 +447,14 @@ void iniciarScanWiFiTFT() {
   tft.setTextColor(TFT_GREEN, TFT_BLACK);
   tft.drawCentreString("PROCURANDO REDES...", 120, 130, 2);
   tft.drawCentreString("Aguarde o Scan Wi-Fi", 120, 160, 2);
+  
   scannedSSIDs.clear();
   scannedRSSI.clear();
-  WiFi.mode(WIFI_STA);
-  WiFi.disconnect();
-  delay(100);
+
+  // O parâmetro 'async = false' e 'show_hidden = false' mantêm o scan ativo
+  // Usamos scanNetworks(false, true) para escaneamento assíncrono/passivo sem desconectar obrigatoriamente
   int n = WiFi.scanNetworks();
+  
   if (n > 0) {
     for (int i = 0; i < n; ++i) {
       String ssid = WiFi.SSID(i);
@@ -472,6 +474,12 @@ void iniciarScanWiFiTFT() {
     }
   }
   WiFi.scanDelete();
+
+  // --- RECONECTA À REDE SALVA SE EXISTIR ---
+  if (cfgSSID.length() > 0) {
+    WiFi.begin(cfgSSID.c_str(), cfgPASS.c_str());
+  }
+
   wifiSetupState = 0;
   wifiScanPage = 0;
   forceRedraw = true;
@@ -483,6 +491,32 @@ void drawWiFiScanScreen() {
   tft.setTextColor(TFT_CYAN, TFT_BLACK);
   tft.drawCentreString("SELECAO DE WI-FI", 120, 8, 4);
 
+  // --- TRAVA DE SEGURANÇA: SE JÁ ESTIVER CONECTADO COM IP VÁLIDO ---
+  if (WiFi.status() == WL_CONNECTED && WiFi.localIP() != IPAddress(0,0,0,0)) {
+    tft.setTextColor(TFT_GREEN, TFT_BLACK);
+    tft.drawCentreString("REDE JA CONECTADA!", 120, 70, 2);
+
+    tft.setTextColor(TFT_WHITE, TFT_BLACK);
+    tft.drawCentreString("SSID ATUAL:", 120, 110, 2);
+    tft.setTextColor(TFT_GREEN, TFT_BLACK);
+    tft.drawCentreString(WiFi.SSID(), 120, 130, 2);
+
+    tft.setTextColor(TFT_WHITE, TFT_BLACK);
+    tft.drawCentreString("ENDERECO IP:", 120, 170, 2);
+    tft.setTextColor(TFT_YELLOW, TFT_BLACK);
+    tft.drawCentreString(WiFi.localIP().toString(), 120, 195, 2);
+
+    tft.setTextColor(TFT_CYAN, TFT_BLACK);
+    tft.drawCentreString("Sinal: " + String(WiFi.RSSI()) + " dBm", 120, 230, 2);
+
+    // Botão Único para Sair sem Perder a Conexão
+    tft.drawRoundRect(20, 268, 200, 42, 5, TFT_RED);
+    tft.setTextColor(TFT_RED, TFT_BLACK);
+    tft.drawCentreString("VOLTAR AO MENU", 120, 282, 2);
+    return; // Encerra a função para NÃO realizar o scan de redes
+  }
+
+  // --- SE NÃO ESTIVER CONECTADO, SEGUE A TELA NORMAL COM O SCAN ---
   if (scannedSSIDs.empty()) {
     tft.setTextColor(TFT_RED, TFT_BLACK);
     tft.drawCentreString("Nenhuma rede encontrada", 120, 120, 2);
@@ -517,23 +551,21 @@ void drawWiFiScanScreen() {
                          120, 252, 1);
   }
 
-  // --- BOTÕES DO RODAPÉ (3 Botões de 70px x 42px) ---
-  
-  // 1. Botão VOLTA / SAIR (Vermelho)
+  // Botões Rodapé Padrão: [VOLTAR] [SCAN] [PAG >]
   tft.drawRoundRect(10, 268, 70, 42, 5, TFT_RED);
   tft.setTextColor(TFT_RED, TFT_BLACK);
-  tft.drawCentreString("SAI", 45, 282, 2);
+  tft.drawCentreString("VOLTAR", 45, 282, 2);
 
-  // 2. Botão ESCANEAR (Ciano)
   tft.drawRoundRect(85, 268, 70, 42, 5, TFT_CYAN);
   tft.setTextColor(TFT_CYAN, TFT_BLACK);
   tft.drawCentreString("SCAN", 120, 282, 2);
 
-  // 3. Botão PROX PAG (Magenta)
   tft.drawRoundRect(160, 268, 70, 42, 5, TFT_MAGENTA);
   tft.setTextColor(TFT_MAGENTA, TFT_BLACK);
   tft.drawCentreString("PAG >", 195, 282, 2);
 }
+
+
 void drawWiFiKeyboardScreen() {
   tft.fillScreen(TFT_BLACK);
   tft.drawRect(0, 0, 240, 320, TFT_GREEN);
@@ -620,6 +652,19 @@ void atualizarCaixaSenhaTFT() {
 }
 void handleWiFiTouch(int tx, int ty) {
   if (wifiSetupState == 0) {
+    
+    // --- SE JÁ ESTÁ CONECTADO, TRATA O BOTÃO DE SAÍDA ---
+    if (WiFi.status() == WL_CONNECTED && WiFi.localIP() != IPAddress(0,0,0,0)) {
+      if (ty >= 268 && ty <= 310 && tx >= 20 && tx <= 220) {
+        tft.fillRoundRect(20, 268, 200, 42, 5, TFT_YELLOW);
+        delay(40);
+        displayMode = 0; // Altere para o índice da sua tela inicial/menu
+        forceRedraw = true;
+      }
+      return;
+    }
+
+    // --- CASO NÃO ESTEJA CONECTADO ---
     if (scannedSSIDs.size() > 0) {
       int startIdx = wifiScanPage * 4;
       int endIdx = min((int)scannedSSIDs.size(), startIdx + 4);
@@ -637,18 +682,17 @@ void handleWiFiTouch(int tx, int ty) {
       }
     }
 
-    // --- TRATAMENTO DOS BOTÕES DO RODAPÉ (wifiSetupState == 0) ---
-
-    // 1. Botão VOLTAR (X: 10 a 80, Y: 268 a 310)
+    // Botão 1: VOLTAR (X: 10 a 80, Y: 268 a 310)
     if (tx >= 10 && tx <= 80 && ty >= 268 && ty <= 310) {
       tft.fillRoundRect(10, 268, 70, 42, 5, TFT_YELLOW);
       delay(40);
-      displayMode = 0;   // Retorna para o menu/tela principal
+      displayMode = 0; // Altere para o índice da sua tela inicial/menu
       forceRedraw = true;
+      ESP.restart();
       return;
     }
 
-    // 2. Botão SCAN (X: 85 a 155, Y: 268 a 310)
+    // Botão 2: SCAN (X: 85 a 155, Y: 268 a 310)
     if (tx >= 85 && tx <= 155 && ty >= 268 && ty <= 310) {
       tft.fillRoundRect(85, 268, 70, 42, 5, TFT_YELLOW);
       delay(40);
@@ -656,7 +700,7 @@ void handleWiFiTouch(int tx, int ty) {
       return;
     }
 
-    // 3. Botão PAG > (X: 160 a 230, Y: 268 a 310)
+    // Botão 3: PAG > (X: 160 a 230, Y: 268 a 310)
     if (tx >= 160 && tx <= 230 && ty >= 268 && ty <= 310) {
       tft.fillRoundRect(160, 268, 70, 42, 5, TFT_YELLOW);
       delay(40);
@@ -1559,7 +1603,7 @@ void drawWiFiScreen() {
   tft.setTextColor(TFT_GREEN,
                    TFT_BLACK); // Mudei para verde para destacar a chave
   tft.drawCentreString("SENHA: " + cfgPASS, tft.width() / 2, 280, 2);
-  if (updateDisponivel) {
+  if (!updateDisponivel) {
     tft.setTextColor(TFT_RED, TFT_BLACK);
     tft.drawCentreString("UPDATE DISPONIVEL: v" + versaoNova, 120, 290, 2);
   }
@@ -1667,7 +1711,6 @@ void salvarConfig() {
     f.println("PASS=" + cfgPASS);
     f.println("MODO=" + cfgMODO);
     f.println("IP_ALVO=" + cfgIP);
-    f.println("PIX=" + cfgPIX); // ADICIONE ESTA LINHA
     f.println("PIX=" + cfgPIX);
     f.println("WISER=" + cfgWiser);
     f.close();
