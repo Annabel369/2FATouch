@@ -139,7 +139,12 @@ ESP32FtpServer: Para acesso remoto aos arquivos. ele vem com todas Elas Juntas
     TJpg_Decoder
     XPT2046_Touchscreen
 
-Regulagem customizado usando o nanu que eu desenvolvi e um editor de texto!
+Regulagem customizado usando o ( nanu ) que eu desenvolvi e um editor de texto!
+
+
+https://github.com/Annabel369/wnano
+
+
 <img width="973" height="123" alt="image" src="https://github.com/user-attachments/assets/1b93315a-6d86-4f75-bfc9-715caf4bcf32" />
 
 <img width="1017" height="511" alt="image" src="https://github.com/user-attachments/assets/111e1644-220c-43ba-b1aa-5229c66f0e0f" />
