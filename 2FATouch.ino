@@ -554,15 +554,15 @@ void drawWiFiScanScreen() {
   // Botões Rodapé Padrão: [VOLTAR] [SCAN] [PAG >]
   tft.drawRoundRect(10, 268, 70, 42, 5, TFT_RED);
   tft.setTextColor(TFT_RED, TFT_BLACK);
-  tft.drawCentreString("VOLTAR", 45, 282, 2);
+  tft.drawCentreString("RESET", 45, 282, 2);
 
   tft.drawRoundRect(85, 268, 70, 42, 5, TFT_CYAN);
   tft.setTextColor(TFT_CYAN, TFT_BLACK);
-  tft.drawCentreString("SCAN", 120, 282, 2);
+  tft.drawCentreString("EXIT", 120, 282, 2);
 
   tft.drawRoundRect(160, 268, 70, 42, 5, TFT_MAGENTA);
   tft.setTextColor(TFT_MAGENTA, TFT_BLACK);
-  tft.drawCentreString("PAG >", 195, 282, 2);
+  tft.drawCentreString("NEX >", 195, 282, 2);
 }
 
 
