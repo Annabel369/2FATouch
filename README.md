@@ -16,8 +16,23 @@ Suport: https://www.youtube.com/watch?v=Y1EU-4kPpXc
 
 OBS: dependendo do Modelo pesquise no codigo inverter se tiver com a cor Branca ta invertida a cor no caso o meu esp32 true para a cor funcionar e do meu  Irmao e False modelo de fabricacao
 
+<img width="1920" height="1074" alt="image" src="https://github.com/user-attachments/assets/0bf54103-3280-442c-8bf3-52341bc16ef5" />
+
+
 
 ![WIN_20260106_03_42_48_Pro](https://github.com/user-attachments/assets/9bae5c3f-6ea4-4f8b-a3c6-ab38e6009a8d)
+
+    // --- CONFIGURAÇÕES DE CALIBRAÇÃO CIRÚRGICA DO TOUCH XPT2046 ---
+    const int TOUCH_MIN_RAW_X = 2350;// defalt 200 ou 300 folga 1000
+    const int TOUCH_MAX_RAW_X = 3650;// defalt 3700 ou 3000 ou 3250
+    const int TOUCH_MIN_RAW_Y = 200;
+    const int TOUCH_MAX_RAW_Y = 3700;
+    const bool TOUCH_INVERT_X =
+    false; // Mude para true se o toque horizontal estiver espelhado
+    const bool TOUCH_INVERT_Y =
+    false; // Mude para true se o toque vertical estiver espelhado
+    const bool TOUCH_SWAP_XY =
+    false; // Mude para true se os eixos X e Y estiverem trocados
 
 <img width="1040" height="503" alt="image" src="https://github.com/user-attachments/assets/07b3348c-3310-44e3-be96-e2cc8f625813" />
 ESP32-2432S028R
