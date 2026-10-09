@@ -1,6 +1,6 @@
 // ===== CREEPER AUTH v7.2.2 - DUAL STACK + NETWORK + SEED COLUMNS (VERSÃO FINAL) =====
 #include "allconfigs.h"
-#include "allfuc.h"
+#include <2FATouchCore.h>
 
 void setup() {
   Serial.begin(115200);
