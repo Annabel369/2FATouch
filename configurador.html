@@ -742,6 +742,8 @@
     const urlVer = document.getElementById('urlVersaoGitHub').value;
 
     return `#pragma once
+#ifndef ALLCONFIGS_H
+#define ALLCONFIGS_H
 #include <Arduino.h>
 
 // ====================================================================
@@ -875,6 +877,7 @@ bool updateDisponivel = false;
 WiFiClientSecure client;
 WeatherData weather;
 bool tlsAtivado = false;
+#endif // ALLCONFIGS_H
 `;
   }
 
