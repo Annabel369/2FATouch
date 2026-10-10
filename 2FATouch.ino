@@ -13,7 +13,7 @@ void setup() {
   // LANG_PT_BR = Português / Portuguese
   
   //GlobalLanguage = LANG_EN_US; // Ativação em Inglês
-  GlobalLanguage = LANG_EN_US;   // Ativação em Português
+  GlobalLanguage = LANG_PT_BR;   // Ativação em Português
 
 
   // Configura o pino de Backlight como saída
